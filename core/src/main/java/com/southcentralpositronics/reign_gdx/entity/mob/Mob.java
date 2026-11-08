@@ -23,6 +23,8 @@ public class Mob extends Entity {
     protected static final int   mobSize            = 32;
     protected              float shootCooldown      = 0f;
     protected static final float SHOOT_DELAY        = 0.5f; // 0.2 seconds between shots
+    /** The atlas region prefix of the enemy sprite, ported from the Java2D dummy sheet. */
+    protected static final String ENEMY_SPRITE      = "King_Berno";
 
     protected AnimatedSprite mobUp, mobDown, mobLeft, mobRight;
     protected AnimatedSprite animSprite;
@@ -52,6 +54,24 @@ public class Mob extends Entity {
 //
 //        animSprite = mobDown;
 //    }
+
+    /**
+     * Loads the four walking animations for this mob and faces it down.
+     *
+     * @param atlas  The atlas that holds the mob sprites.
+     * @param prefix The region prefix; the atlas must hold
+     *               {@code PREFIX_Up}, {@code PREFIX_Down}, {@code PREFIX_Left},
+     *               and {@code PREFIX_Right} regions.
+     */
+    protected void loadAnimations(TextureAtlas atlas, String prefix) {
+        this.atlas = atlas;
+        mobUp      = new AnimatedSprite(atlas, prefix + "_Up", 0.2f, true);
+        mobDown    = new AnimatedSprite(atlas, prefix + "_Down", 0.2f, true);
+        mobLeft    = new AnimatedSprite(atlas, prefix + "_Left", 0.2f, true);
+        mobRight   = new AnimatedSprite(atlas, prefix + "_Right", 0.2f, true);
+        animSprite = mobDown;
+        direction  = Direction.DOWN;
+    }
 
     public void move(double xa, double ya) {
         if (xa > 0) direction = Direction.RIGHT;

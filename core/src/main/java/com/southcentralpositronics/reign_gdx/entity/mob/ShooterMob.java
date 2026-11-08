@@ -1,5 +1,7 @@
 package com.southcentralpositronics.reign_gdx.entity.mob;
 
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+
 import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
 
 import java.util.List;
@@ -10,10 +12,10 @@ public class ShooterMob extends Mob {
     private float directionChangeTimer = 0;
     private float shootCooldown        = 0;
 
-    public ShooterMob(int x, int y, String path) {
+    public ShooterMob(int x, int y, TextureAtlas atlas) {
+        loadAnimations(atlas, ENEMY_SPRITE);
         this.x          = x << 4;
         this.y          = y << 4;
-        this.animSprite = mobDown; // Ensure animations are injected externally
         this.type       = Type.ENEMY;
         this.health     = 1.0;
     }

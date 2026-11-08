@@ -1,5 +1,7 @@
 package com.southcentralpositronics.reign_gdx.entity.mob;
 
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+
 import com.southcentralpositronics.reign_gdx.level.tile.Node;
 import com.southcentralpositronics.reign_gdx.util.Vector2i;
 
@@ -12,11 +14,10 @@ public class AStarChaserMob extends Mob {
     private       List<Node> path      = null;
     private       float      pathTimer = 0f; // in seconds
 
-    public AStarChaserMob(int x, int y, String path) {
-        // These should be set by the caller after loading from TextureAtlas
+    public AStarChaserMob(int x, int y, TextureAtlas atlas) {
+        loadAnimations(atlas, ENEMY_SPRITE);
         this.x          = x << 4;
         this.y          = y << 4;
-        this.animSprite = mobDown;
         this.type       = Type.ENEMY;
     }
 

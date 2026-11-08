@@ -2,7 +2,6 @@ package com.southcentralpositronics.reign_gdx.entity.mob;
 
 import com.southcentralpositronics.reign_gdx.Game;
 import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
-import com.southcentralpositronics.reign_gdx.graphics.AnimatedSprite;
 import com.southcentralpositronics.reign_gdx.input.Keyboard;
 import com.southcentralpositronics.reign_gdx.input.Mouse;
 
@@ -36,12 +35,7 @@ public class PlayerMob extends Mob {
         paddingTop       = 24;
         paddingBottom    = 0;
 
-        atlas      = game.getMobAtlas();
-        mobUp      = new AnimatedSprite(atlas, "King_Cherno_Up", 0.2f, true);
-        mobDown    = new AnimatedSprite(atlas, "King_Cherno_Down", 0.2f, true);
-        mobLeft    = new AnimatedSprite(atlas, "King_Cherno_Left", 0.2f, true);
-        mobRight   = new AnimatedSprite(atlas, "King_Cherno_Right", 0.2f, true);
-        animSprite = mobDown;
+        loadAnimations(game.getMobAtlas(), "King_Cherno");
 
         height = animSprite.getCurrentFrame().getRegionHeight();
         width  = animSprite.getCurrentFrame().getRegionWidth();
