@@ -45,7 +45,7 @@ public class Game extends ApplicationAdapter {
 
     @Override
     public void create() {
-        String mobAtlasPath  = "atlas/Mobs.atlas";
+        String mobAtlasPath  = "atlas/mobs.atlas";
         String tileAtlasPath = "atlas/Tiles.atlas";
         mapPath = "levels/test.png";
 //        mapPath       = "levels/SpawnLevel_v20.png";

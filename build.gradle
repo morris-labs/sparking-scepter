@@ -29,7 +29,12 @@ allprojects {
 
 configure(subprojects) {
   apply plugin: 'java-library'
-  sourceCompatibility = 23
+  // Gradle provisions JDK 23 through the foojay resolver if the host lacks it.
+  java {
+    toolchain {
+      languageVersion = JavaLanguageVersion.of(23)
+    }
+  }
 
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.
