@@ -36,8 +36,8 @@ public class DummyMob extends Mob {
         updateRandomDirection();
 
         if (xa != 0 || ya != 0) {
-            if (collision(0, ya * 2)) ya *= -1;
-            if (collision(xa * 2, 0)) xa *= -1;
+            if (collision(x, y + ya * 2)) ya *= -1;
+            if (collision(x + xa * 2, y)) xa *= -1;
             move(xa, ya);
             walking = true;
         } else {

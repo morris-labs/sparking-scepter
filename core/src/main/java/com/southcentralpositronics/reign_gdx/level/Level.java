@@ -10,8 +10,10 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.southcentralpositronics.reign_gdx.Game;
 import com.southcentralpositronics.reign_gdx.entity.Entity;
 import com.southcentralpositronics.reign_gdx.entity.Particle;
+import com.southcentralpositronics.reign_gdx.entity.mob.ChaserMob;
 import com.southcentralpositronics.reign_gdx.entity.mob.Mob;
 import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
+import com.southcentralpositronics.reign_gdx.entity.mob.ShooterMob;
 import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
 import com.southcentralpositronics.reign_gdx.entity.projectile.SpellProjectile;
 import com.southcentralpositronics.reign_gdx.graphics.TileLoader;
@@ -24,6 +26,7 @@ import com.southcentralpositronics.reign_gdx.util.Vector2i;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 public class Level {
     private final ArrayList<Entity>     entities    = new ArrayList<>();
@@ -39,6 +42,13 @@ public class Level {
     protected Game     game;
 
     private int xScroll, yScroll;
+
+    /** The number of shooter enemies that {@link #generateMobs()} spawns. */
+    private static final int    SHOOTER_COUNT      = 3;
+    /** The number of chaser enemies that {@link #generateMobs()} spawns. */
+    private static final int    CHASER_COUNT       = 2;
+    /** The closest that a spawned mob can be to the player, in pixels. */
+    private static final double MIN_SPAWN_DISTANCE = 6 * 16;
 
     public Level(Game game) {
         this.game = game;
@@ -192,6 +202,53 @@ public class Level {
 //            clientPlayer.onEvent(event);
 //        }
 //    }
+
+    /**
+     * Spawns the starting enemies for this level, as the Java2D
+     * {@code Level.generateMobs()} did.
+     */
+    public void generateMobs() {
+        TextureAtlas atlas = game.getMobAtlas();
+        spawnMobs(SHOOTER_COUNT, (tx, ty) -> new ShooterMob(tx, ty, atlas));
+        spawnMobs(CHASER_COUNT, (tx, ty) -> new ChaserMob(tx, ty, atlas));
+    }
+
+    /**
+     * Spawns mobs on random tiles where a whole mob fits without touching a
+     * solid tile, away from the player.
+     *
+     * <p>The method gives up on a mob after {@code width * height} tries, so a
+     * map with no free space spawns fewer mobs than requested.
+     *
+     * @param count   The number of mobs to spawn.
+     * @param factory Creates a mob at the given tile coordinates.
+     * @return The number of mobs spawned.
+     */
+    public int spawnMobs(int count, BiFunction<Integer, Integer, Mob> factory) {
+        int       tileSize = 16;
+        int       mobSize  = 32;
+        PlayerMob player   = getClientPlayer();
+        int       spawned  = 0;
+
+        for (int i = 0; i < count; i++) {
+            for (int tries = 0; tries < width * height; tries++) {
+                int    tx = MathUtils.random(0, width - 1);
+                int    ty = MathUtils.random(0, height - 1);
+                double px = tx * tileSize;
+                double py = ty * tileSize;
+
+                if (tileCollision(px, py, mobSize, mobSize)) continue;
+                if (player != null
+                    && Math.hypot(player.getX() - px, player.getY() - py) < MIN_SPAWN_DISTANCE) {
+                    continue;
+                }
+                add(factory.apply(tx, ty));
+                spawned++;
+                break;
+            }
+        }
+        return spawned;
+    }
 
     public void clearMobs() {
         mobs.clear();

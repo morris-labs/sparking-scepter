@@ -129,8 +129,13 @@ public class Mob extends Entity {
         level.add(projectile);
     }
 
+    /**
+     * Fires at the closest player within {@link #DETECTION_DISTANCE}, at most
+     * once every {@link Projectile#SHOT_DELAY} seconds. The caller must count
+     * {@code shootCooldown} down by the frame time.
+     */
     protected void shootClosest() {
-//        if (Game.updateInt % Projectile.SHOT_DELAY != 0) return;
+        if (shootCooldown > 0f) return;
 
         PlayerMob       closestPlayer = null;
         List<PlayerMob> players       = level.getPlayersInRadius(this, DETECTION_DISTANCE);
@@ -150,6 +155,7 @@ public class Mob extends Entity {
             double dy          = closestPlayer.getY() - y;
             double firingAngle = Math.atan2(dy, dx);
             shootAtPos((int) x, (int) y, firingAngle);
+            shootCooldown = Projectile.SHOT_DELAY;
         }
     }
 

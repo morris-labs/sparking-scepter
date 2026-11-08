@@ -10,7 +10,6 @@ public class ShooterMob extends Mob {
     private int   xa                   = random.nextInt(3) - 1;
     private int   ya                   = random.nextInt(3) - 1;
     private float directionChangeTimer = 0;
-    private float shootCooldown        = 0;
 
     public ShooterMob(int x, int y, TextureAtlas atlas) {
         loadAnimations(atlas, ENEMY_SPRITE);
@@ -23,7 +22,7 @@ public class ShooterMob extends Mob {
     @Override
     public void update(float delta) {
         directionChangeTimer += delta;
-        shootCooldown += delta;
+        if (shootCooldown > 0f) shootCooldown -= delta;
 
         shootClosest();
         checkForHit();
@@ -41,8 +40,8 @@ public class ShooterMob extends Mob {
         }
 
         if (xa != 0 || ya != 0) {
-            if (collision(0, ya * 2)) ya *= -1;
-            if (collision(xa * 2, 0)) xa *= -1;
+            if (collision(x, y + ya * 2)) ya *= -1;
+            if (collision(x + xa * 2, y)) xa *= -1;
             move(xa, ya);
             walking = true;
         } else {

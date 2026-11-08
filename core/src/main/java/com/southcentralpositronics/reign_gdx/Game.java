@@ -86,6 +86,7 @@ public class Game extends ApplicationAdapter {
 //        player = new PlayerMob(this, 200, 200, "King Steve");
         level.add(player);
         level.setPlayer(player);
+        level.generateMobs();
     }
 
     @Override
