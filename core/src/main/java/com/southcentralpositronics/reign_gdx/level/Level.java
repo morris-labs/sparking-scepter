@@ -214,8 +214,8 @@ public class Level {
     }
 
     /**
-     * Spawns mobs on random tiles where a whole mob fits without touching a
-     * solid tile, away from the player.
+     * Spawns mobs on random open tiles, away from the player. Each mob's
+     * collision box fills the bottom half of its tile.
      *
      * <p>The method gives up on a mob after {@code width * height} tries, so a
      * map with no free space spawns fewer mobs than requested.
@@ -226,7 +226,6 @@ public class Level {
      */
     public int spawnMobs(int count, BiFunction<Integer, Integer, Mob> factory) {
         int       tileSize = 16;
-        int       mobSize  = 32;
         PlayerMob player   = getClientPlayer();
         int       spawned  = 0;
 
@@ -234,12 +233,10 @@ public class Level {
             for (int tries = 0; tries < width * height; tries++) {
                 int    tx = MathUtils.random(0, width - 1);
                 int    ty = MathUtils.random(0, height - 1);
-                double px = tx * tileSize;
-                double py = ty * tileSize;
-
-                if (tileCollision(px, py, mobSize, mobSize)) continue;
-                if (player != null
-                    && Math.hypot(player.getX() - px, player.getY() - py) < MIN_SPAWN_DISTANCE) {
+                Tile tile = tiles[tx][ty];
+                if (tile == null || tile.isSolid()) continue;
+                if (player != null && Math.hypot(player.getTileX() - tx, player.getTileY() - ty) * tileSize
+                    < MIN_SPAWN_DISTANCE) {
                     continue;
                 }
                 add(factory.apply(tx, ty));

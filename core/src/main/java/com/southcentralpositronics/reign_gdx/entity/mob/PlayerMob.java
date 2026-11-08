@@ -30,10 +30,6 @@ public class PlayerMob extends Mob {
         direction        = Direction.DOWN;
         collisionOffsetX = -24;
         collisionOffsetY = -32;
-        paddingLeft      = 8;
-        paddingRight     = 8;
-        paddingTop       = 24;
-        paddingBottom    = 0;
 
         loadAnimations(game.getMobAtlas(), "King_Cherno");
 

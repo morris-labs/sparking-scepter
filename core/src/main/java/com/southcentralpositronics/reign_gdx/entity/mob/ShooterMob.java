@@ -13,8 +13,7 @@ public class ShooterMob extends Mob {
 
     public ShooterMob(int x, int y, TextureAtlas atlas) {
         loadAnimations(atlas, ENEMY_SPRITE);
-        this.x          = x << 4;
-        this.y          = y << 4;
+        placeOnTile(x, y);
         this.type       = Type.ENEMY;
         this.health     = 1.0;
     }

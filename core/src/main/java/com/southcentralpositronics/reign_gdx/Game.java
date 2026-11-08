@@ -78,11 +78,10 @@ public class Game extends ApplicationAdapter {
         // -------------------------------------------------------------
         // Pick a random walkable tile and convert it to pixel coords
         // -------------------------------------------------------------
+        // TileCoordinates holds pixels; placeOnTile() takes tile indexes.
         TileCoordinates spawnTile = level.getRandomNonSolidTile();
-        int             tileSize  = 16;                            // whatever you use in renderTiles()
-        int             spawnX    = (int) (spawnTile.getX() + (tileSize * 0.5f)); // centre of tile
-        int             spawnY    = (int) (spawnTile.getY() + (tileSize * 0.5f));
-        player = new PlayerMob(this, spawnX, spawnY, "King Steve");
+        player = new PlayerMob(this, 0, 0, "King Steve");
+        player.placeOnTile(spawnTile.getX() / 16, spawnTile.getY() / 16);
 //        player = new PlayerMob(this, 200, 200, "King Steve");
         level.add(player);
         level.setPlayer(player);

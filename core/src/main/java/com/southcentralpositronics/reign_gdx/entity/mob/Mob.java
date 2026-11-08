@@ -56,6 +56,41 @@ public class Mob extends Entity {
 //    }
 
     /**
+     * Gives every mob the player's collision box: a 16x8 px box at the feet,
+     * centered at the bottom of the 32x32 sprite. A mob therefore fits in a
+     * corridor one tile wide.
+     */
+    protected Mob() {
+        paddingLeft   = 8;
+        paddingRight  = 8;
+        paddingTop    = 24;
+        paddingBottom = 0;
+    }
+
+    /**
+     * Places the mob so that its collision box fills the bottom half of a tile.
+     *
+     * @param tx The tile column.
+     * @param ty The tile row.
+     */
+    public void placeOnTile(int tx, int ty) {
+        x = tx * tileSize - paddingLeft;
+        y = ty * tileSize - paddingBottom;
+    }
+
+    /** Gets the tile column under the center of the collision box. */
+    public int getTileX() {
+        double centerX = x + paddingLeft + (mobSize - paddingLeft - paddingRight) / 2.0;
+        return (int) Math.floor(centerX / tileSize);
+    }
+
+    /** Gets the tile row under the center of the collision box. */
+    public int getTileY() {
+        double centerY = y + paddingBottom + (mobSize - paddingTop - paddingBottom) / 2.0;
+        return (int) Math.floor(centerY / tileSize);
+    }
+
+    /**
      * Loads the four walking animations for this mob and faces it down.
      *
      * @param atlas  The atlas that holds the mob sprites.
@@ -104,8 +139,9 @@ public class Mob extends Entity {
         int mapPixelWidth  = level.getWidth() * tileSize;
         int mapPixelHeight = level.getHeight() * tileSize;
 
-        x = MathUtils.clamp(x, 0, mapPixelWidth - tileSize);
-        y = MathUtils.clamp(y, 0, mapPixelHeight - tileSize);
+        // Clamp so the collision box stays on the map.
+        x = MathUtils.clamp(x, -paddingLeft, mapPixelWidth - mobSize + paddingRight);
+        y = MathUtils.clamp(y, -paddingBottom, mapPixelHeight - mobSize + paddingTop);
 
         walking = xa != 0 || ya != 0;
     }
