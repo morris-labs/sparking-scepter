@@ -106,8 +106,7 @@ public class Game extends ApplicationAdapter {
 
         // Update game logic
         keyboard.update();
-        player.update(delta);
-        level.update();
+        level.update(delta);
 
         // You can move camera here if following the player, etc.
         // camera.position.set(...);
@@ -132,7 +131,6 @@ public class Game extends ApplicationAdapter {
         batch.begin();
         batch.enableBlending();
         level.render(batch);
-        for (PlayerMob p : level.getPlayers()) p.render(batch);
         batch.end();
 
         float thickness = 1.5f; // Set your desired border thickness

@@ -62,12 +62,21 @@ public class Level {
         generateLevel(colorMap, tileMap);
     }
 
-    public void update() {
-        for (Entity e : entities) e.update();
-        for (Projectile p : projectiles) p.update();
-        for (Particle p : particles) p.update();
-        for (Mob m : mobs) m.update();
-        for (PlayerMob p : players) p.update();
+    /**
+     * Updates every entity in the level, then drops the removed ones.
+     *
+     * <p>The loops index the lists instead of using iterators, because an
+     * update can add entities (for example, a mob firing a projectile).
+     * Entities added during this pass update on the next frame.
+     *
+     * @param delta The time since the last frame, in seconds.
+     */
+    public void update(float delta) {
+        for (int i = 0, n = entities.size(); i < n; i++) entities.get(i).update();
+        for (int i = 0, n = projectiles.size(); i < n; i++) projectiles.get(i).update();
+        for (int i = 0, n = particles.size(); i < n; i++) particles.get(i).update();
+        for (int i = 0, n = mobs.size(); i < n; i++) mobs.get(i).update(delta);
+        for (int i = 0, n = players.size(); i < n; i++) players.get(i).update(delta);
         remove();
     }
 
@@ -99,8 +108,8 @@ public class Level {
         for (Entity e : entities) e.render(batch, xScroll, yScroll);
         for (Particle p : particles) p.render(batch);
         for (Projectile p : projectiles) p.render(batch);
-        for (Mob m : mobs) m.render(batch, xScroll, yScroll);
-        for (PlayerMob p : players) p.render(batch, xScroll, yScroll);
+        for (Mob m : mobs) m.render(batch);
+        for (PlayerMob p : players) p.render(batch);
     }
 
     public void renderTiles(SpriteBatch batch, Tile[][] tileGrid, int xScroll, int yScroll, int tileSize) {

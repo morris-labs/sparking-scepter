@@ -1,6 +1,5 @@
 package com.southcentralpositronics.reign_gdx.entity.mob;
 
-import com.badlogic.gdx.Gdx;
 import com.southcentralpositronics.reign_gdx.Game;
 import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
 import com.southcentralpositronics.reign_gdx.graphics.AnimatedSprite;
@@ -52,7 +51,7 @@ public class PlayerMob extends Mob {
 
 
     @Override
-    public void update() {
+    public void update(float delta) {
         double xa = 0, ya = 0;
 
         if (keyboard.up) {
@@ -76,9 +75,9 @@ public class PlayerMob extends Mob {
             move(xa, ya);
         }
         if (shootCooldown > 0f) {
-            shootCooldown -= Gdx.graphics.getDeltaTime();
+            shootCooldown -= delta;
         }
-        updateAnimation(Gdx.graphics.getDeltaTime(), isMoving, direction);
+        updateAnimation(delta, isMoving, direction);
         if (mouse.isLeftPressed()) {
             firePlayerSpell();  // your existing method
         }
