@@ -10,6 +10,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.southcentralpositronics.reign_gdx.Game;
 import com.southcentralpositronics.reign_gdx.entity.Entity;
 import com.southcentralpositronics.reign_gdx.entity.Particle;
+import com.southcentralpositronics.reign_gdx.entity.mob.AStarChaserMob;
 import com.southcentralpositronics.reign_gdx.entity.mob.ChaserMob;
 import com.southcentralpositronics.reign_gdx.entity.mob.Mob;
 import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
@@ -24,8 +25,11 @@ import com.southcentralpositronics.reign_gdx.level.tile.TileCoordinates;
 import com.southcentralpositronics.reign_gdx.util.Vector2i;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.function.BiFunction;
 
 public class Level {
@@ -47,6 +51,8 @@ public class Level {
     private static final int    SHOOTER_COUNT      = 3;
     /** The number of chaser enemies that {@link #generateMobs()} spawns. */
     private static final int    CHASER_COUNT       = 2;
+    /** The number of A* chaser enemies that {@link #generateMobs()} spawns. */
+    private static final int    ASTAR_CHASER_COUNT = 2;
     /** The closest that a spawned mob can be to the player, in pixels. */
     private static final double MIN_SPAWN_DISTANCE = 6 * 16;
 
@@ -211,6 +217,7 @@ public class Level {
         TextureAtlas atlas = game.getMobAtlas();
         spawnMobs(SHOOTER_COUNT, (tx, ty) -> new ShooterMob(tx, ty, atlas));
         spawnMobs(CHASER_COUNT, (tx, ty) -> new ChaserMob(tx, ty, atlas));
+        spawnMobs(ASTAR_CHASER_COUNT, (tx, ty) -> new AStarChaserMob(tx, ty, atlas));
     }
 
     /**
@@ -321,9 +328,88 @@ public class Level {
         this.player = player;
     }
 
+    /**
+     * Finds a path between two tiles with A*, ported from the Java2D
+     * {@code Level.findPath()}.
+     *
+     * <p>A mob's collision box fits in one tile, so any open tile is a valid
+     * step. Diagonal steps cost the square root of two and can't cut a wall
+     * corner. The Java2D version costed diagonals at 0.95, which made paths
+     * zigzag, and let them cut corners.
+     *
+     * @param startVec The tile to start from.
+     * @param destVec  The tile to reach.
+     * @return The path from the goal back to the first step, so the next tile
+     *     to move to is the last element. The list is empty when no path exists
+     *     or when the mob is already on the goal tile.
+     */
     public List<Node> findPath(Vector2i startVec, Vector2i destVec) {
-        return List.of();
+        List<Node> path = new ArrayList<>();
+        if (!inBounds(startVec.x, startVec.y) || !isTileOpen(destVec.x, destVec.y)) return path;
+
+        double[] bestCost = new double[width * height];
+        Arrays.fill(bestCost, Double.POSITIVE_INFINITY);
+        boolean[]           closed = new boolean[width * height];
+        PriorityQueue<Node> open   = new PriorityQueue<>(Comparator.comparingDouble((Node n) -> n.fCost));
+
+        open.add(new Node(startVec, null, 0, Vector2i.getDistance(startVec, destVec)));
+        bestCost[tileIndex(startVec.x, startVec.y)] = 0;
+
+        while (!open.isEmpty()) {
+            Node current = open.poll();
+            int  index   = tileIndex(current.tile.x, current.tile.y);
+            if (closed[index]) continue;    // A cheaper copy of this tile was expanded already.
+            closed[index] = true;
+
+            if (current.tile.equals(destVec)) {
+                while (current.parent != null) {
+                    path.add(current);
+                    current = current.parent;
+                }
+                return path;
+            }
+
+            for (int i = 0; i < 9; i++) {
+                if (i == 4) continue;       // The current tile.
+                int xDir = (i % 3) - 1;
+                int yDir = (i / 3) - 1;
+                int nx   = current.tile.x + xDir;
+                int ny   = current.tile.y + yDir;
+
+                if (!isTileOpen(nx, ny)) continue;
+                if (xDir != 0 && yDir != 0) {
+                    // Don't cut corners: both orthogonal neighbours must be open too.
+                    if (!isTileOpen(current.tile.x + xDir, current.tile.y)) continue;
+                    if (!isTileOpen(current.tile.x, current.tile.y + yDir)) continue;
+                }
+
+                int nIndex = tileIndex(nx, ny);
+                if (closed[nIndex]) continue;
+                double gCost = current.gCost + (xDir != 0 && yDir != 0 ? Math.sqrt(2) : 1);
+                if (gCost >= bestCost[nIndex]) continue;
+                bestCost[nIndex] = gCost;
+                Vector2i next = new Vector2i(nx, ny);
+                open.add(new Node(next, current, gCost, Vector2i.getDistance(next, destVec)));
+            }
+        }
+        return path;
     }
+
+    private boolean inBounds(int tx, int ty) {
+        return tx >= 0 && ty >= 0 && tx < width && ty < height;
+    }
+
+    private int tileIndex(int tx, int ty) {
+        return ty * width + tx;
+    }
+
+    /** Checks whether the tile is inside the map and not solid. */
+    private boolean isTileOpen(int tx, int ty) {
+        if (!inBounds(tx, ty)) return false;
+        Tile tile = tiles[tx][ty];
+        return tile != null && !tile.isSolid();
+    }
+
 
     public ArrayList<Entity> getEntities() {
         return entities;

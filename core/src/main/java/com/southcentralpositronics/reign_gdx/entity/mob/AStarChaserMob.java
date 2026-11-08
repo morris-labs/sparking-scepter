@@ -21,13 +21,14 @@ public class AStarChaserMob extends Mob {
     }
 
     private void calculatePath() {
-        int px = (int) level.getClientPlayer().getX();
-        int py = (int) level.getClientPlayer().getY();
-
-        Vector2i startVec = new Vector2i(((int) x) >> 4, ((int) y) >> 4);
-        Vector2i destVec  = new Vector2i(px >> 4, py >> 4);
-
-        this.path = level.findPath(startVec, destVec);
+        PlayerMob player = level.getClientPlayer();
+        if (player == null) {
+            path = null;
+            return;
+        }
+        Vector2i startVec = new Vector2i(getTileX(), getTileY());
+        Vector2i destVec  = new Vector2i(player.getTileX(), player.getTileY());
+        path = level.findPath(startVec, destVec);
     }
 
     private void moveAlongPath() {
@@ -35,10 +36,10 @@ public class AStarChaserMob extends Mob {
         ya = 0;
 
         if (path != null && !path.isEmpty()) {
-            Vector2i target = path.getLast().tile;
-
-            double targetX = target.x << 4;
-            double targetY = target.y << 4;
+            // Head for the spot where placeOnTile() would put this mob.
+            Vector2i target  = path.getLast().tile;
+            double   targetX = target.x * tileSize - paddingLeft;
+            double   targetY = target.y * tileSize - paddingBottom;
 
             if (x < targetX) xa += speed;
             if (x > targetX) xa -= speed;
