@@ -10,6 +10,10 @@ public class TileMapBuilder {
     /**
      * Builds a 2D array of Tiles based on the input color map.
      *
+     * <p>Pixmap rows run top to bottom and world rows run bottom to top, so
+     * the builder flips the image vertically: the top row of the PNG becomes
+     * the highest row of the grid. The level then looks like the PNG file.
+     *
      * @param colorMap  A Pixmap where each pixel color represents a tile type
      * @param tileTypes A map from pixel ARGB color (int) to Tile instances (with textures already set)
      * @return A 2D array of Tile objects representing the level
@@ -31,15 +35,16 @@ public class TileMapBuilder {
                 Tile baseTile = tileTypes.get(pixelColor);
                 if (baseTile == null) {
                     System.out.printf("Unknown tile color: 0x%08X at (%d, %d)%n", pixelColor, x, y);
-                    baseTile = tileTypes.getOrDefault(0xFF280A2B, new Tile(Tile.tileType.void_tile, false)); // fallback to void
+                    baseTile = tileTypes.getOrDefault(TileLoader.COLOR_VOID, new Tile(Tile.tileType.void_tile, true));
                 }
 
                 Tile tileInstance = new Tile(baseTile.tile_Type, baseTile.isSolid());
+                int gridY = height - 1 - y;
                 tileInstance.x = x;
-                tileInstance.y = y;
+                tileInstance.y = gridY;
                 tileInstance.setTexture(baseTile.getTexture());
 
-                tileGrid[x][y] = tileInstance;
+                tileGrid[x][gridY] = tileInstance;
             }
         }
 

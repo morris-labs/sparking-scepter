@@ -47,8 +47,8 @@ public class Game extends ApplicationAdapter {
     public void create() {
         String mobAtlasPath  = "atlas/mobs.atlas";
         String tileAtlasPath = "atlas/Tiles.atlas";
-        mapPath = "levels/test.png";
-//        mapPath       = "levels/SpawnLevel_v20.png";
+        // The 40x75 spawn level that the Java2D Reign loads.
+        mapPath = "levels/SpawnLevel.png";
         mobAtlas      = new TextureAtlas(Gdx.files.internal(mobAtlasPath));
         tileAtlas     = new TextureAtlas(Gdx.files.internal(tileAtlasPath));
         shapeRenderer = new ShapeRenderer();
