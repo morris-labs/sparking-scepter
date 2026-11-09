@@ -3,13 +3,31 @@ package com.southcentralpositronics.reign_gdx.entity;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.southcentralpositronics.reign_gdx.level.Level;
 
 public class Particle extends Entity {
     protected double xx, yy, zz, xa, ya, za;
+
+    /**
+     * One red pixel that every particle draws. A texture per particle leaked
+     * GPU memory and broke sprite batching: a single fireball spawns up to
+     * 1,000 particles.
+     */
+    private static TextureRegion pixel;
+
+    /** Gets the shared red pixel, creating it on first use on the GL thread. */
+    private static TextureRegion pixel() {
+        if (pixel == null) {
+            Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+            pixmap.setColor(Color.RED);
+            pixmap.fill();
+            pixel = new TextureRegion(new Texture(pixmap));
+            pixmap.dispose();
+        }
+        return pixel;
+    }
 
 
     public Particle(double x, double y, double angle, int life, Level level) {
@@ -22,15 +40,6 @@ public class Particle extends Entity {
         this.ya   = random.nextGaussian();
         this.zz   = random.nextFloat() + 2.0;
 
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.RED);
-        pixmap.fill();
-        Texture whitePixel = new Texture(pixmap);
-        pixmap.dispose();
-
-// Use it in your Particle constructor
-        sprite = new Sprite(new TextureRegion(whitePixel));
-        sprite.setColor(1f, 0f, 0f, 1f); // red
         init(level);
     }
 
@@ -75,6 +84,6 @@ public class Particle extends Entity {
     }
 
     public void render(SpriteBatch batch) {
-        batch.draw(sprite, (float) (xx - 5), (float) (yy - zz + 5));
+        batch.draw(pixel(), (float) (xx - 5), (float) (yy - zz + 5));
     }
 }
