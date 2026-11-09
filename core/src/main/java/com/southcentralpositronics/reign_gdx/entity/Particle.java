@@ -59,13 +59,10 @@ public class Particle extends Entity {
             ya *= 1;
         }
 
-        double xDelta = xx + xa;
-        double yDelta = yy + ya;
-        double zDelta = zz + za;
-        move(xDelta, yDelta + zDelta);
+        move();
     }
 
-    private void move(double xDelta, double yDelta) {
+    private void move() {
         if (collision(xa, 0)) {
             this.xa *= -1;
         }
@@ -80,10 +77,16 @@ public class Particle extends Entity {
     }
 
     public boolean collision(double xb, double yb) {
-        return level.tileCollision(xx + xb, yy + yb, 2, 2);
+        return level.tileCollision(xx + xb, yy + yb, 1, 1);
     }
 
+    /**
+     * Draws the particle at its ground position, raised by its height. The
+     * Java2D version drew at (x - 5, y - z + 5) for its y-down screen; in
+     * libGDX's y-up world that put particles 5 px left of and below where
+     * they collide, and made height push them down.
+     */
     public void render(SpriteBatch batch) {
-        batch.draw(pixel(), (float) (xx - 5), (float) (yy - zz + 5));
+        batch.draw(pixel(), (float) xx, (float) (yy + zz));
     }
 }
