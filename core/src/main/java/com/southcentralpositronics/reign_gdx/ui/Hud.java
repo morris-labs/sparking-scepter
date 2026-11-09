@@ -23,7 +23,7 @@ import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
 import com.southcentralpositronics.reign_gdx.level.Level;
 
 /**
- * The side panel ported from the Java2D Reign player UI: the player's name, a
+ * The side panel ported from the Java2D Reign player UI: a minimap, the player's name, a
  * health bar, the score, buttons that add and clear enemies, and an exit
  * button. It fills a strip {@link #PANEL_WIDTH} pixels wide on the right of
  * the window, and the game draws in the rest.
@@ -45,6 +45,7 @@ public class Hud implements Disposable {
     private final ProgressBar healthBar;
     private final Label       scoreLabel;
     private final Cell<Actor> topSlot;
+    private final Minimap     minimap;
     private       long        shownScore = -1;
 
     /**
@@ -101,6 +102,9 @@ public class Hud implements Disposable {
         root.setFillParent(true);
         root.right().add(panel).width(PANEL_WIDTH).growY();
         stage.addActor(root);
+
+        minimap = new Minimap(level);
+        setTopActor(minimap);
         update(0f);
     }
 
@@ -175,5 +179,6 @@ public class Hud implements Disposable {
         stage.dispose();
         skin.dispose();
         exitTexture.dispose();
+        minimap.dispose();
     }
 }

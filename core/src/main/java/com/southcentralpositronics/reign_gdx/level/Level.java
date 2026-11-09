@@ -62,6 +62,11 @@ public class Level {
         loadLevel(game.getTileAtlas(), game.getMapPath());
     }
 
+    /** Gets the enemies in the level. */
+    public List<Mob> getMobs() {
+        return mobs;
+    }
+
     public ArrayList<PlayerMob> getPlayers() {
         return players;
     }
