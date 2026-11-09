@@ -39,8 +39,6 @@ public class Mob extends Entity {
     protected Direction      direction;
     protected Viewport       viewport;
 
-    protected int          collisionOffsetX;
-    protected int          collisionOffsetY;
     protected boolean      walking;
     protected double       health;
     protected TextureAtlas atlas;
@@ -50,8 +48,6 @@ public class Mob extends Entity {
 //    public Mob(String path) {
 //        walking          = false;
 //        dir              = Direction.DOWN;
-//        collisionOffsetX = -24;
-//        collisionOffsetY = -32;
 //
 //        atlas = new TextureAtlas(Gdx.files.internal(path));
 //
@@ -168,10 +164,25 @@ public class Mob extends Entity {
         return value < 0 ? -1 : 1;
     }
 
-    protected void shootAtPos(int x, int y, double angle) {
+    /**
+     * Fires a spell from this mob's body center.
+     *
+     * @param angle The direction, in radians, counterclockwise from +x.
+     */
+    protected void shootAt(double angle) {
         TextureAtlas tileAtlas  = level.getGame().getTileAtlas();
-        Projectile   projectile = new SpellProjectile(x, y - 16, angle, this, tileAtlas);
+        Projectile   projectile = new SpellProjectile(getBodyCenterX(), getBodyCenterY(), angle, this, tileAtlas);
         level.add(projectile);
+    }
+
+    /** Gets the x coordinate of the center of the body that projectiles hit. */
+    public double getBodyCenterX() {
+        return x + paddingLeft + (mobSize - paddingLeft - paddingRight) / 2.0;
+    }
+
+    /** Gets the y coordinate of the center of the body that projectiles hit. */
+    public double getBodyCenterY() {
+        return y + HURT_HEIGHT / 2.0;
     }
 
     /**
@@ -196,10 +207,9 @@ public class Mob extends Entity {
         }
 
         if (closestPlayer != null) {
-            double dx          = closestPlayer.getX() - x;
-            double dy          = closestPlayer.getY() - y;
-            double firingAngle = Math.atan2(dy, dx);
-            shootAtPos((int) x, (int) y, firingAngle);
+            double dx          = closestPlayer.getBodyCenterX() - getBodyCenterX();
+            double dy          = closestPlayer.getBodyCenterY() - getBodyCenterY();
+            shootAt(Math.atan2(dy, dx));
             shootCooldown = Projectile.SHOT_DELAY;
         }
     }
@@ -208,11 +218,9 @@ public class Mob extends Entity {
         if (shootCooldown > 0f) return;
 
         Vector2 worldMouse = viewport.unproject(new Vector2(Mouse.getX(), Mouse.getY()));
-        float   dx         = worldMouse.x - (float) this.x;
-        float   dy         = worldMouse.y - (float) this.y;
-        float   angle      = (float) Math.atan2(dy, dx);
-
-        shootAtPos((int) x + 20, (int) y + 20, angle);
+        double  dx         = worldMouse.x - getBodyCenterX();
+        double  dy         = worldMouse.y - getBodyCenterY();
+        shootAt(Math.atan2(dy, dx));
 
         shootCooldown = SHOOT_DELAY; // reset cooldown
     }

@@ -29,8 +29,6 @@ public class PlayerMob extends Mob {
         this.type        = Type.PLAYER;
         walking          = false;
         direction        = Direction.DOWN;
-        collisionOffsetX = -24;
-        collisionOffsetY = -32;
 
         loadAnimations(game.getMobAtlas(), "King_Cherno");
 

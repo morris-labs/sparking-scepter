@@ -22,17 +22,23 @@ public abstract class Projectile extends Entity {
     protected TextureRegion texture;
     protected Entity        firedBy;
 
-    public int collisionOffsetX = -12;
-    public int collisionOffsetY = -2;
 
+    /**
+     * Creates a projectile.
+     *
+     * @param x         The x coordinate of the projectile's center.
+     * @param y         The y coordinate of the projectile's center.
+     * @param direction The direction, in radians, counterclockwise from +x.
+     */
     public Projectile(double x, double y, double direction) {
         this.position = new Vector2((float) x, (float) y);
         this.origin   = new Vector2((float) x, (float) y);
         this.angle    = direction;
-        paddingLeft   = 8;
-        paddingRight  = 8;
-        paddingTop    = 8;
-        paddingBottom = 8;
+        // A 4x4 px wall-collision box at the center of the 16x16 sprite.
+        paddingLeft   = 6;
+        paddingRight  = 6;
+        paddingTop    = 6;
+        paddingBottom = 6;
         this.velocity = new Vector2((float) Math.cos(direction), (float) Math.sin(direction));
     }
 
@@ -45,7 +51,8 @@ public abstract class Projectile extends Entity {
         int     width   = texture.getRegionWidth();
         int     height  = texture.getRegionHeight();
         Vector2 nextPos = position.cpy().add((float) xDelta, (float) yDelta);
-        boolean hitWall = level.tileCollision(x + xDelta, y + yDelta, width, height, paddingLeft, paddingRight, paddingTop, paddingBottom);
+        boolean hitWall = level.tileCollision(x - width / 2.0 + xDelta, y - height / 2.0 + yDelta, width, height,
+                                              paddingLeft, paddingRight, paddingTop, paddingBottom);
 
         if (hitWall) {
             remove();
@@ -61,7 +68,7 @@ public abstract class Projectile extends Entity {
 
     public void render(Batch batch) {
         if (texture != null && !removed) {
-            batch.draw(texture, position.x + collisionOffsetX, position.y + collisionOffsetY);
+            batch.draw(texture, position.x - texture.getRegionWidth() / 2f, position.y - texture.getRegionHeight() / 2f);
         }
     }
 
@@ -94,14 +101,14 @@ public abstract class Projectile extends Entity {
         return position.y;
     }
 
-    /** Gets the x coordinate of the center of the drawn projectile. */
+    /** Gets the x coordinate of the projectile's center. */
     public double getCenterX() {
-        return position.x + collisionOffsetX + (texture != null ? texture.getRegionWidth() / 2.0 : 0);
+        return position.x;
     }
 
-    /** Gets the y coordinate of the center of the drawn projectile. */
+    /** Gets the y coordinate of the projectile's center. */
     public double getCenterY() {
-        return position.y + collisionOffsetY + (texture != null ? texture.getRegionHeight() / 2.0 : 0);
+        return position.y;
     }
 
     public TextureRegion getTexture() {
