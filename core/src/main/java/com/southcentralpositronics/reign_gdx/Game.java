@@ -10,7 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.viewport.StretchViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
 import com.southcentralpositronics.reign_gdx.events.Event;
@@ -19,6 +19,7 @@ import com.southcentralpositronics.reign_gdx.input.Keyboard;
 import com.southcentralpositronics.reign_gdx.input.Mouse;
 import com.southcentralpositronics.reign_gdx.level.Level;
 import com.southcentralpositronics.reign_gdx.level.tile.TileCoordinates;
+import com.southcentralpositronics.reign_gdx.ui.Hud;
 
 public class Game extends ApplicationAdapter {
     public static final int           WIDTH           = (int) (1920);
@@ -40,6 +41,7 @@ public class Game extends ApplicationAdapter {
     private Keyboard           keyboard;
     private Mouse              mouse;
     private Level              level;
+    private Hud                hud;
     private PlayerMob          player;
     private OrthographicCamera camera = new OrthographicCamera();
 
@@ -64,10 +66,9 @@ public class Game extends ApplicationAdapter {
 
             }
         });
-        Gdx.input.setInputProcessor(new InputMultiplexer(keyboard, mouse));
-
-
-        viewport = new StretchViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, camera);
+        // The world is always VIEWPORT_HEIGHT pixels tall; its width follows the
+        // game area's aspect ratio, so the side panel doesn't squash the view.
+        viewport = new ExtendViewport(VIEWPORT_HEIGHT, VIEWPORT_HEIGHT, camera);
         viewport.apply();
         camera = (OrthographicCamera) viewport.getCamera();
         camera.position.set(VIEWPORT_WIDTH / 2f, VIEWPORT_HEIGHT / 2f, 0);
@@ -86,11 +87,17 @@ public class Game extends ApplicationAdapter {
         level.add(player);
         level.setPlayer(player);
         level.generateMobs();
+
+        hud = new Hud(player, level);
+        // The panel comes first so its buttons take clicks before the spell input.
+        Gdx.input.setInputProcessor(new InputMultiplexer(hud.getStage(), keyboard, mouse));
     }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height);
+        // The game draws left of the side panel.
+        viewport.update(Math.max(1, width - Hud.PANEL_WIDTH), height);
+        hud.resize(width, height);
     }
 
 
@@ -107,6 +114,8 @@ public class Game extends ApplicationAdapter {
         // Update game logic
         keyboard.update();
         level.update(delta);
+        hud.update(delta);
+        viewport.apply();
 
         // You can move camera here if following the player, etc.
         // camera.position.set(...);
@@ -153,12 +162,14 @@ public class Game extends ApplicationAdapter {
         shapeRenderer.rect(hitboxX, hitboxY + hitboxHeight - thickness, hitboxWidth, thickness);
         shapeRenderer.end();
 
+        hud.draw();
     }
 
     @Override
     public void dispose() {
         batch.dispose();
         mobAtlas.dispose();
+        hud.dispose();
         // Dispose of any other resources you manually load
     }
 

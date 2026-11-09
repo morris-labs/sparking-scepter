@@ -45,6 +45,8 @@ public class Level {
     protected Game     game;
 
     private int xScroll, yScroll;
+    /** True after Clear Mobs, so the empty level doesn't spawn a new wave at once. */
+    private boolean wavesPaused = false;
 
     /** The number of shooter enemies that {@link #generateMobs()} spawns. */
     private static final int    SHOOTER_COUNT      = 10;
@@ -97,7 +99,8 @@ public class Level {
         remove();
 
         // As in the Java2D SpawnLevel, a new wave spawns once every enemy is dead.
-        if (mobs.isEmpty() && getClientPlayer() != null) generateMobs();
+        // Clear Mobs pauses this until the next generateMobs() call.
+        if (mobs.isEmpty() && !wavesPaused && getClientPlayer() != null) generateMobs();
     }
 
     private void remove() {
@@ -218,6 +221,7 @@ public class Level {
      * {@code Level.generateMobs()} did.
      */
     public void generateMobs() {
+        wavesPaused = false;
         TextureAtlas atlas = game.getMobAtlas();
         spawnMobs(SHOOTER_COUNT, (tx, ty) -> new ShooterMob(tx, ty, atlas));
         spawnMobs(CHASER_COUNT, (tx, ty) -> new ChaserMob(tx, ty, atlas));
@@ -258,7 +262,9 @@ public class Level {
         return spawned;
     }
 
+    /** Removes every enemy and pauses new waves until the next {@link #generateMobs()}. */
     public void clearMobs() {
+        wavesPaused = true;
         mobs.clear();
     }
 
