@@ -1,15 +1,16 @@
 package com.southcentralpositronics.reign_gdx.entity.mob;
 
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+
 public class DummyMob extends Mob {
     private int   xa                   = random.nextInt(3) - 1;
     private int   ya                   = random.nextInt(3) - 1;
     private float time                 = 0;
     private float directionChangeTimer = 0;
 
-    public DummyMob(int x, int y, String path) {
-        this.x          = x << 4;
-        this.y          = y << 4;
-        this.animSprite = mobDown; // ensure mobDown is set externally
+    public DummyMob(int x, int y, TextureAtlas atlas) {
+        loadAnimations(atlas, ENEMY_SPRITE);
+        placeOnTile(x, y);
         this.type       = Type.ENEMY;
     }
 
@@ -34,8 +35,8 @@ public class DummyMob extends Mob {
         updateRandomDirection();
 
         if (xa != 0 || ya != 0) {
-            if (collision(0, ya * 2)) ya *= -1;
-            if (collision(xa * 2, 0)) xa *= -1;
+            if (collision(x, y + ya * 2)) ya *= -1;
+            if (collision(x + xa * 2, y)) xa *= -1;
             move(xa, ya);
             walking = true;
         } else {

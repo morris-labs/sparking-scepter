@@ -10,7 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.viewport.StretchViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
 import com.southcentralpositronics.reign_gdx.events.Event;
@@ -19,6 +19,7 @@ import com.southcentralpositronics.reign_gdx.input.Keyboard;
 import com.southcentralpositronics.reign_gdx.input.Mouse;
 import com.southcentralpositronics.reign_gdx.level.Level;
 import com.southcentralpositronics.reign_gdx.level.tile.TileCoordinates;
+import com.southcentralpositronics.reign_gdx.ui.Hud;
 
 public class Game extends ApplicationAdapter {
     public static final int           WIDTH           = (int) (1920);
@@ -40,6 +41,7 @@ public class Game extends ApplicationAdapter {
     private Keyboard           keyboard;
     private Mouse              mouse;
     private Level              level;
+    private Hud                hud;
     private PlayerMob          player;
     private OrthographicCamera camera = new OrthographicCamera();
 
@@ -47,8 +49,8 @@ public class Game extends ApplicationAdapter {
     public void create() {
         String mobAtlasPath  = "atlas/mobs.atlas";
         String tileAtlasPath = "atlas/Tiles.atlas";
-        mapPath = "levels/test.png";
-//        mapPath       = "levels/SpawnLevel_v20.png";
+        // The 40x75 spawn level that the Java2D Reign loads.
+        mapPath = "levels/SpawnLevel.png";
         mobAtlas      = new TextureAtlas(Gdx.files.internal(mobAtlasPath));
         tileAtlas     = new TextureAtlas(Gdx.files.internal(tileAtlasPath));
         shapeRenderer = new ShapeRenderer();
@@ -64,10 +66,9 @@ public class Game extends ApplicationAdapter {
 
             }
         });
-        Gdx.input.setInputProcessor(new InputMultiplexer(keyboard, mouse));
-
-
-        viewport = new StretchViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, camera);
+        // The world is always VIEWPORT_HEIGHT pixels tall; its width follows the
+        // game area's aspect ratio, so the side panel doesn't squash the view.
+        viewport = new ExtendViewport(VIEWPORT_HEIGHT, VIEWPORT_HEIGHT, camera);
         viewport.apply();
         camera = (OrthographicCamera) viewport.getCamera();
         camera.position.set(VIEWPORT_WIDTH / 2f, VIEWPORT_HEIGHT / 2f, 0);
@@ -78,19 +79,25 @@ public class Game extends ApplicationAdapter {
         // -------------------------------------------------------------
         // Pick a random walkable tile and convert it to pixel coords
         // -------------------------------------------------------------
+        // TileCoordinates holds pixels; placeOnTile() takes tile indexes.
         TileCoordinates spawnTile = level.getRandomNonSolidTile();
-        int             tileSize  = 16;                            // whatever you use in renderTiles()
-        int             spawnX    = (int) (spawnTile.getX() + (tileSize * 0.5f)); // centre of tile
-        int             spawnY    = (int) (spawnTile.getY() + (tileSize * 0.5f));
-        player = new PlayerMob(this, spawnX, spawnY, "King Steve");
+        player = new PlayerMob(this, 0, 0, "King Steve");
+        player.placeOnTile(spawnTile.getX() / 16, spawnTile.getY() / 16);
 //        player = new PlayerMob(this, 200, 200, "King Steve");
         level.add(player);
         level.setPlayer(player);
+        level.generateMobs();
+
+        hud = new Hud(player, level);
+        // The panel comes first so its buttons take clicks before the spell input.
+        Gdx.input.setInputProcessor(new InputMultiplexer(hud.getStage(), keyboard, mouse));
     }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height);
+        // The game draws left of the side panel.
+        viewport.update(Math.max(1, width - Hud.PANEL_WIDTH), height);
+        hud.resize(width, height);
     }
 
 
@@ -106,8 +113,9 @@ public class Game extends ApplicationAdapter {
 
         // Update game logic
         keyboard.update();
-        player.update(delta);
-        level.update();
+        level.update(delta);
+        hud.update(delta);
+        viewport.apply();
 
         // You can move camera here if following the player, etc.
         // camera.position.set(...);
@@ -122,7 +130,8 @@ public class Game extends ApplicationAdapter {
         // Clamp Y
         float cameraY = MathUtils.clamp((int) player.getY(), halfHeight, mapPixelHeight - halfHeight);
 
-        camera.position.set(cameraX, cameraY, 0);
+        // Keep the camera on whole world pixels; the clamp bounds can be fractional.
+        camera.position.set(Math.round(cameraX), Math.round(cameraY), 0);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
         shapeRenderer.setProjectionMatrix(camera.combined);
@@ -132,7 +141,6 @@ public class Game extends ApplicationAdapter {
         batch.begin();
         batch.enableBlending();
         level.render(batch);
-        for (PlayerMob p : level.getPlayers()) p.render(batch);
         batch.end();
 
         float thickness = 1.5f; // Set your desired border thickness
@@ -155,12 +163,14 @@ public class Game extends ApplicationAdapter {
         shapeRenderer.rect(hitboxX, hitboxY + hitboxHeight - thickness, hitboxWidth, thickness);
         shapeRenderer.end();
 
+        hud.draw();
     }
 
     @Override
     public void dispose() {
         batch.dispose();
         mobAtlas.dispose();
+        hud.dispose();
         // Dispose of any other resources you manually load
     }
 

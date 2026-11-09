@@ -1,5 +1,7 @@
 package com.southcentralpositronics.reign_gdx.entity.mob;
 
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+
 import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
 
 import java.util.List;
@@ -8,12 +10,10 @@ public class ShooterMob extends Mob {
     private int   xa                   = random.nextInt(3) - 1;
     private int   ya                   = random.nextInt(3) - 1;
     private float directionChangeTimer = 0;
-    private float shootCooldown        = 0;
 
-    public ShooterMob(int x, int y, String path) {
-        this.x          = x << 4;
-        this.y          = y << 4;
-        this.animSprite = mobDown; // Ensure animations are injected externally
+    public ShooterMob(int x, int y, TextureAtlas atlas) {
+        loadAnimations(atlas, ENEMY_SPRITE);
+        placeOnTile(x, y);
         this.type       = Type.ENEMY;
         this.health     = 1.0;
     }
@@ -21,10 +21,9 @@ public class ShooterMob extends Mob {
     @Override
     public void update(float delta) {
         directionChangeTimer += delta;
-        shootCooldown += delta;
+        if (shootCooldown > 0f) shootCooldown -= delta;
 
         shootClosest();
-        checkForHit();
 
         // Update direction every 0.5–1.5 seconds
         if (directionChangeTimer >= random.nextFloat(0.5f, 1.5f)) {
@@ -39,8 +38,8 @@ public class ShooterMob extends Mob {
         }
 
         if (xa != 0 || ya != 0) {
-            if (collision(0, ya * 2)) ya *= -1;
-            if (collision(xa * 2, 0)) xa *= -1;
+            if (collision(x, y + ya * 2)) ya *= -1;
+            if (collision(x + xa * 2, y)) xa *= -1;
             move(xa, ya);
             walking = true;
         } else {
@@ -71,24 +70,4 @@ public class ShooterMob extends Mob {
 //        }
 //    }
 
-    private void checkForHit() {
-        List<Projectile> projectiles = level.getProjectiles();
-        int              hitRange    = 16;
-
-        for (Projectile projectile : projectiles) {
-            if (!(projectile.getFiredBy() instanceof PlayerMob)) continue;
-
-            double dx = (x + collisionOffsetX) - (projectile.getX() + projectile.collisionOffsetX) + 8;
-            double dy = (y + collisionOffsetY) - (projectile.getY() + projectile.collisionOffsetY) + 16;
-
-            if (Math.abs(dx) < hitRange && Math.abs(dy) < hitRange) {
-                projectile.hitTarget();
-                health -= 0.1;
-                if (health <= 0) {
-                    remove();
-                    ((PlayerMob) projectile.getFiredBy()).scoredKill();
-                }
-            }
-        }
-    }
 }

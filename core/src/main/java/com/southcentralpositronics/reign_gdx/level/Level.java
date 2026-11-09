@@ -10,10 +10,12 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.southcentralpositronics.reign_gdx.Game;
 import com.southcentralpositronics.reign_gdx.entity.Entity;
 import com.southcentralpositronics.reign_gdx.entity.Particle;
+import com.southcentralpositronics.reign_gdx.entity.mob.AStarChaserMob;
+import com.southcentralpositronics.reign_gdx.entity.mob.ChaserMob;
 import com.southcentralpositronics.reign_gdx.entity.mob.Mob;
 import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
+import com.southcentralpositronics.reign_gdx.entity.mob.ShooterMob;
 import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
-import com.southcentralpositronics.reign_gdx.entity.projectile.SpellProjectile;
 import com.southcentralpositronics.reign_gdx.graphics.TileLoader;
 import com.southcentralpositronics.reign_gdx.graphics.TileMapBuilder;
 import com.southcentralpositronics.reign_gdx.level.tile.Node;
@@ -22,8 +24,12 @@ import com.southcentralpositronics.reign_gdx.level.tile.TileCoordinates;
 import com.southcentralpositronics.reign_gdx.util.Vector2i;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.function.BiFunction;
 
 public class Level {
     private final ArrayList<Entity>     entities    = new ArrayList<>();
@@ -39,10 +45,26 @@ public class Level {
     protected Game     game;
 
     private int xScroll, yScroll;
+    /** True after Clear Mobs, so the empty level doesn't spawn a new wave at once. */
+    private boolean wavesPaused = false;
+
+    /** The number of shooter enemies that {@link #generateMobs()} spawns. */
+    private static final int    SHOOTER_COUNT      = 10;
+    /** The number of chaser enemies that {@link #generateMobs()} spawns. */
+    private static final int    CHASER_COUNT       = 5;
+    /** The number of A* chaser enemies that {@link #generateMobs()} spawns. */
+    private static final int    ASTAR_CHASER_COUNT = 5;
+    /** The closest that a spawned mob can be to the player, in pixels. */
+    private static final double MIN_SPAWN_DISTANCE = 6 * 16;
 
     public Level(Game game) {
         this.game = game;
         loadLevel(game.getTileAtlas(), game.getMapPath());
+    }
+
+    /** Gets the enemies in the level. */
+    public List<Mob> getMobs() {
+        return mobs;
     }
 
     public ArrayList<PlayerMob> getPlayers() {
@@ -62,13 +84,28 @@ public class Level {
         generateLevel(colorMap, tileMap);
     }
 
-    public void update() {
-        for (Entity e : entities) e.update();
-        for (Projectile p : projectiles) p.update();
-        for (Particle p : particles) p.update();
-        for (Mob m : mobs) m.update();
-        for (PlayerMob p : players) p.update();
+    /**
+     * Updates every entity in the level, then drops the removed ones.
+     *
+     * <p>The loops index the lists instead of using iterators, because an
+     * update can add entities (for example, a mob firing a projectile).
+     * Entities added during this pass update on the next frame.
+     *
+     * @param delta The time since the last frame, in seconds.
+     */
+    public void update(float delta) {
+        for (int i = 0, n = entities.size(); i < n; i++) entities.get(i).update();
+        for (int i = 0, n = projectiles.size(); i < n; i++) projectiles.get(i).update();
+        for (int i = 0, n = particles.size(); i < n; i++) particles.get(i).update();
+        for (int i = 0, n = mobs.size(); i < n; i++) mobs.get(i).update(delta);
+        for (int i = 0, n = players.size(); i < n; i++) players.get(i).update(delta);
+        for (int i = 0, n = mobs.size(); i < n; i++) mobs.get(i).checkForHits();
+        for (int i = 0, n = players.size(); i < n; i++) players.get(i).checkForHits();
         remove();
+
+        // As in the Java2D SpawnLevel, a new wave spawns once every enemy is dead.
+        // Clear Mobs pauses this until the next generateMobs() call.
+        if (mobs.isEmpty() && !wavesPaused && getClientPlayer() != null) generateMobs();
     }
 
     private void remove() {
@@ -99,8 +136,8 @@ public class Level {
         for (Entity e : entities) e.render(batch, xScroll, yScroll);
         for (Particle p : particles) p.render(batch);
         for (Projectile p : projectiles) p.render(batch);
-        for (Mob m : mobs) m.render(batch, xScroll, yScroll);
-        for (PlayerMob p : players) p.render(batch, xScroll, yScroll);
+        for (Mob m : mobs) m.render(batch);
+        for (PlayerMob p : players) p.render(batch);
     }
 
     public void renderTiles(SpriteBatch batch, Tile[][] tileGrid, int xScroll, int yScroll, int tileSize) {
@@ -136,7 +173,7 @@ public class Level {
         e.init(this);
         if (e instanceof Particle) {
             particles.add((Particle) e);
-        } else if (e instanceof SpellProjectile) {
+        } else if (e instanceof Projectile) {
             projectiles.add((Projectile) e);
         } else if (e instanceof PlayerMob) {
             players.add((PlayerMob) e);
@@ -184,7 +221,55 @@ public class Level {
 //        }
 //    }
 
+    /**
+     * Spawns the starting enemies for this level, as the Java2D
+     * {@code Level.generateMobs()} did.
+     */
+    public void generateMobs() {
+        wavesPaused = false;
+        TextureAtlas atlas = game.getMobAtlas();
+        spawnMobs(SHOOTER_COUNT, (tx, ty) -> new ShooterMob(tx, ty, atlas));
+        spawnMobs(CHASER_COUNT, (tx, ty) -> new ChaserMob(tx, ty, atlas));
+        spawnMobs(ASTAR_CHASER_COUNT, (tx, ty) -> new AStarChaserMob(tx, ty, atlas));
+    }
+
+    /**
+     * Spawns mobs on random open tiles, away from the player. Each mob's
+     * collision box fills the bottom half of its tile.
+     *
+     * <p>The method gives up on a mob after {@code width * height} tries, so a
+     * map with no free space spawns fewer mobs than requested.
+     *
+     * @param count   The number of mobs to spawn.
+     * @param factory Creates a mob at the given tile coordinates.
+     * @return The number of mobs spawned.
+     */
+    public int spawnMobs(int count, BiFunction<Integer, Integer, Mob> factory) {
+        int       tileSize = 16;
+        PlayerMob player   = getClientPlayer();
+        int       spawned  = 0;
+
+        for (int i = 0; i < count; i++) {
+            for (int tries = 0; tries < width * height; tries++) {
+                int    tx = MathUtils.random(0, width - 1);
+                int    ty = MathUtils.random(0, height - 1);
+                Tile tile = tiles[tx][ty];
+                if (tile == null || tile.isSolid()) continue;
+                if (player != null && Math.hypot(player.getTileX() - tx, player.getTileY() - ty) * tileSize
+                    < MIN_SPAWN_DISTANCE) {
+                    continue;
+                }
+                add(factory.apply(tx, ty));
+                spawned++;
+                break;
+            }
+        }
+        return spawned;
+    }
+
+    /** Removes every enemy and pauses new waves until the next {@link #generateMobs()}. */
     public void clearMobs() {
+        wavesPaused = true;
         mobs.clear();
     }
 
@@ -258,9 +343,88 @@ public class Level {
         this.player = player;
     }
 
+    /**
+     * Finds a path between two tiles with A*, ported from the Java2D
+     * {@code Level.findPath()}.
+     *
+     * <p>A mob's collision box fits in one tile, so any open tile is a valid
+     * step. Diagonal steps cost the square root of two and can't cut a wall
+     * corner. The Java2D version costed diagonals at 0.95, which made paths
+     * zigzag, and let them cut corners.
+     *
+     * @param startVec The tile to start from.
+     * @param destVec  The tile to reach.
+     * @return The path from the goal back to the first step, so the next tile
+     *     to move to is the last element. The list is empty when no path exists
+     *     or when the mob is already on the goal tile.
+     */
     public List<Node> findPath(Vector2i startVec, Vector2i destVec) {
-        return List.of();
+        List<Node> path = new ArrayList<>();
+        if (!inBounds(startVec.x, startVec.y) || !isTileOpen(destVec.x, destVec.y)) return path;
+
+        double[] bestCost = new double[width * height];
+        Arrays.fill(bestCost, Double.POSITIVE_INFINITY);
+        boolean[]           closed = new boolean[width * height];
+        PriorityQueue<Node> open   = new PriorityQueue<>(Comparator.comparingDouble((Node n) -> n.fCost));
+
+        open.add(new Node(startVec, null, 0, Vector2i.getDistance(startVec, destVec)));
+        bestCost[tileIndex(startVec.x, startVec.y)] = 0;
+
+        while (!open.isEmpty()) {
+            Node current = open.poll();
+            int  index   = tileIndex(current.tile.x, current.tile.y);
+            if (closed[index]) continue;    // A cheaper copy of this tile was expanded already.
+            closed[index] = true;
+
+            if (current.tile.equals(destVec)) {
+                while (current.parent != null) {
+                    path.add(current);
+                    current = current.parent;
+                }
+                return path;
+            }
+
+            for (int i = 0; i < 9; i++) {
+                if (i == 4) continue;       // The current tile.
+                int xDir = (i % 3) - 1;
+                int yDir = (i / 3) - 1;
+                int nx   = current.tile.x + xDir;
+                int ny   = current.tile.y + yDir;
+
+                if (!isTileOpen(nx, ny)) continue;
+                if (xDir != 0 && yDir != 0) {
+                    // Don't cut corners: both orthogonal neighbours must be open too.
+                    if (!isTileOpen(current.tile.x + xDir, current.tile.y)) continue;
+                    if (!isTileOpen(current.tile.x, current.tile.y + yDir)) continue;
+                }
+
+                int nIndex = tileIndex(nx, ny);
+                if (closed[nIndex]) continue;
+                double gCost = current.gCost + (xDir != 0 && yDir != 0 ? Math.sqrt(2) : 1);
+                if (gCost >= bestCost[nIndex]) continue;
+                bestCost[nIndex] = gCost;
+                Vector2i next = new Vector2i(nx, ny);
+                open.add(new Node(next, current, gCost, Vector2i.getDistance(next, destVec)));
+            }
+        }
+        return path;
     }
+
+    private boolean inBounds(int tx, int ty) {
+        return tx >= 0 && ty >= 0 && tx < width && ty < height;
+    }
+
+    private int tileIndex(int tx, int ty) {
+        return ty * width + tx;
+    }
+
+    /** Checks whether the tile is inside the map and not solid. */
+    private boolean isTileOpen(int tx, int ty) {
+        if (!inBounds(tx, ty)) return false;
+        Tile tile = tiles[tx][ty];
+        return tile != null && !tile.isSolid();
+    }
+
 
     public ArrayList<Entity> getEntities() {
         return entities;

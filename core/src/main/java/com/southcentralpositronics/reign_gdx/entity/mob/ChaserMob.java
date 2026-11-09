@@ -1,5 +1,7 @@
 package com.southcentralpositronics.reign_gdx.entity.mob;
 
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+
 import java.util.List;
 
 public class ChaserMob extends Mob {
@@ -7,10 +9,9 @@ public class ChaserMob extends Mob {
     private       double ya    = 0;
     private final double speed = 0.8;
 
-    public ChaserMob(int x, int y, String path) {
-        this.x          = x << 4;
-        this.y          = y << 4;
-        this.animSprite = mobDown; // Ensure mobDown is set after construction
+    public ChaserMob(int x, int y, TextureAtlas atlas) {
+        loadAnimations(atlas, ENEMY_SPRITE);
+        placeOnTile(x, y);
         this.type       = Type.ENEMY;
     }
 

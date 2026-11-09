@@ -22,15 +22,22 @@ public class Mob extends Entity {
     protected static final int   tileSize           = 16;
     protected static final int   mobSize            = 32;
     protected              float shootCooldown      = 0f;
-    protected static final float SHOOT_DELAY        = 0.5f; // 0.2 seconds between shots
+    /** The health an enemy loses per hit, as in the Java2D ShooterMob: 10 hits kill. */
+    protected static final double ENEMY_HIT_DAMAGE  = 0.1;
+    /** Absorbs floating-point error so 10 hits of 0.1 reach zero. */
+    protected static final double HEALTH_EPSILON    = 1e-9;
+    /** The height of the body that projectiles can hit, from the feet up, in pixels. */
+    protected static final int    HURT_HEIGHT       = 24;
+    /** How far outside the body a projectile's center still counts as a hit, in pixels. */
+    protected static final int    HIT_RADIUS        = 4;
+    /** The atlas region prefix of the enemy sprite, ported from the Java2D dummy sheet. */
+    protected static final String ENEMY_SPRITE      = "King_Berno";
 
     protected AnimatedSprite mobUp, mobDown, mobLeft, mobRight;
     protected AnimatedSprite animSprite;
     protected Direction      direction;
     protected Viewport       viewport;
 
-    protected int          collisionOffsetX;
-    protected int          collisionOffsetY;
     protected boolean      walking;
     protected double       health;
     protected TextureAtlas atlas;
@@ -40,8 +47,6 @@ public class Mob extends Entity {
 //    public Mob(String path) {
 //        walking          = false;
 //        dir              = Direction.DOWN;
-//        collisionOffsetX = -24;
-//        collisionOffsetY = -32;
 //
 //        atlas = new TextureAtlas(Gdx.files.internal(path));
 //
@@ -52,6 +57,60 @@ public class Mob extends Entity {
 //
 //        animSprite = mobDown;
 //    }
+
+    /**
+     * Gives every mob the player's collision box: a 16x8 px box at the feet,
+     * centered at the bottom of the 32x32 sprite. A mob therefore fits in a
+     * corridor one tile wide.
+     */
+    protected Mob() {
+        health        = 1.0;
+        paddingLeft   = 8;
+        paddingRight  = 8;
+        paddingTop    = 24;
+        paddingBottom = 0;
+    }
+
+    /**
+     * Places the mob so that its collision box fills the bottom half of a tile.
+     *
+     * @param tx The tile column.
+     * @param ty The tile row.
+     */
+    public void placeOnTile(int tx, int ty) {
+        x = tx * tileSize - paddingLeft;
+        y = ty * tileSize - paddingBottom;
+    }
+
+    /** Gets the tile column under the center of the collision box. */
+    public int getTileX() {
+        double centerX = x + paddingLeft + (mobSize - paddingLeft - paddingRight) / 2.0;
+        return (int) Math.floor(centerX / tileSize);
+    }
+
+    /** Gets the tile row under the center of the collision box. */
+    public int getTileY() {
+        double centerY = y + paddingBottom + (mobSize - paddingTop - paddingBottom) / 2.0;
+        return (int) Math.floor(centerY / tileSize);
+    }
+
+    /**
+     * Loads the four walking animations for this mob and faces it down.
+     *
+     * @param atlas  The atlas that holds the mob sprites.
+     * @param prefix The region prefix; the atlas must hold
+     *               {@code PREFIX_Up}, {@code PREFIX_Down}, {@code PREFIX_Left},
+     *               and {@code PREFIX_Right} regions.
+     */
+    protected void loadAnimations(TextureAtlas atlas, String prefix) {
+        this.atlas = atlas;
+        mobUp      = new AnimatedSprite(atlas, prefix + "_Up", 0.2f, true);
+        mobDown    = new AnimatedSprite(atlas, prefix + "_Down", 0.2f, true);
+        mobLeft    = new AnimatedSprite(atlas, prefix + "_Left", 0.2f, true);
+        mobRight   = new AnimatedSprite(atlas, prefix + "_Right", 0.2f, true);
+        animSprite = mobDown;
+        direction  = Direction.DOWN;
+    }
 
     public void move(double xa, double ya) {
         if (xa > 0) direction = Direction.RIGHT;
@@ -84,8 +143,9 @@ public class Mob extends Entity {
         int mapPixelWidth  = level.getWidth() * tileSize;
         int mapPixelHeight = level.getHeight() * tileSize;
 
-        x = MathUtils.clamp(x, 0, mapPixelWidth - tileSize);
-        y = MathUtils.clamp(y, 0, mapPixelHeight - tileSize);
+        // Clamp so the collision box stays on the map.
+        x = MathUtils.clamp(x, -paddingLeft, mapPixelWidth - mobSize + paddingRight);
+        y = MathUtils.clamp(y, -paddingBottom, mapPixelHeight - mobSize + paddingTop);
 
         walking = xa != 0 || ya != 0;
     }
@@ -103,14 +163,34 @@ public class Mob extends Entity {
         return value < 0 ? -1 : 1;
     }
 
-    protected void shootAtPos(int x, int y, double angle) {
+    /**
+     * Fires a spell from this mob's body center.
+     *
+     * @param angle The direction, in radians, counterclockwise from +x.
+     */
+    protected void shootAt(double angle) {
         TextureAtlas tileAtlas  = level.getGame().getTileAtlas();
-        Projectile   projectile = new SpellProjectile(x, y - 16, angle, this, tileAtlas);
+        Projectile   projectile = new SpellProjectile(getBodyCenterX(), getBodyCenterY(), angle, this, tileAtlas);
         level.add(projectile);
     }
 
+    /** Gets the x coordinate of the center of the body that projectiles hit. */
+    public double getBodyCenterX() {
+        return x + paddingLeft + (mobSize - paddingLeft - paddingRight) / 2.0;
+    }
+
+    /** Gets the y coordinate of the center of the body that projectiles hit. */
+    public double getBodyCenterY() {
+        return y + HURT_HEIGHT / 2.0;
+    }
+
+    /**
+     * Fires at the closest player within {@link #DETECTION_DISTANCE}, at most
+     * once every {@link Projectile#SHOT_DELAY} seconds. The caller must count
+     * {@code shootCooldown} down by the frame time.
+     */
     protected void shootClosest() {
-//        if (Game.updateInt % Projectile.SHOT_DELAY != 0) return;
+        if (shootCooldown > 0f) return;
 
         PlayerMob       closestPlayer = null;
         List<PlayerMob> players       = level.getPlayersInRadius(this, DETECTION_DISTANCE);
@@ -126,10 +206,10 @@ public class Mob extends Entity {
         }
 
         if (closestPlayer != null) {
-            double dx          = closestPlayer.getX() - x;
-            double dy          = closestPlayer.getY() - y;
-            double firingAngle = Math.atan2(dy, dx);
-            shootAtPos((int) x, (int) y, firingAngle);
+            double dx          = closestPlayer.getBodyCenterX() - getBodyCenterX();
+            double dy          = closestPlayer.getBodyCenterY() - getBodyCenterY();
+            shootAt(Math.atan2(dy, dx));
+            shootCooldown = Projectile.SHOT_DELAY;
         }
     }
 
@@ -137,13 +217,12 @@ public class Mob extends Entity {
         if (shootCooldown > 0f) return;
 
         Vector2 worldMouse = viewport.unproject(new Vector2(Mouse.getX(), Mouse.getY()));
-        float   dx         = worldMouse.x - (float) this.x;
-        float   dy         = worldMouse.y - (float) this.y;
-        float   angle      = (float) Math.atan2(dy, dx);
+        double  dx         = worldMouse.x - getBodyCenterX();
+        double  dy         = worldMouse.y - getBodyCenterY();
+        shootAt(Math.atan2(dy, dx));
 
-        shootAtPos((int) x + 20, (int) y + 20, angle);
-
-        shootCooldown = SHOOT_DELAY; // reset cooldown
+        // The player fires as often as the enemies do.
+        shootCooldown = Projectile.SHOT_DELAY;
     }
 
     /**
@@ -182,14 +261,64 @@ public class Mob extends Entity {
         return level.tileCollision(x, y, mobSize, mobSize, paddingLeft, paddingRight, paddingTop, paddingBottom);
     }
 
+    /**
+     * Applies every projectile that hits this mob. Enemies take hits from
+     * player projectiles, and players take hits from enemy projectiles.
+     * {@link Level#update(float)} calls this once per frame.
+     */
+    public void checkForHits() {
+        if (removed) return;
+        List<Projectile> projectiles = level.getProjectiles();
+        for (int i = 0, n = projectiles.size(); i < n; i++) {
+            Projectile projectile = projectiles.get(i);
+            if (projectile.isRemoved()) continue;
+            boolean firedByPlayer = projectile.getFiredBy() instanceof PlayerMob;
+            if (firedByPlayer == (this instanceof PlayerMob)) continue;
+            if (!isHitBy(projectile)) continue;
+            projectile.hitTarget();
+            onHit(projectile);
+            if (removed) return;
+        }
+    }
+
+    /**
+     * Checks whether a projectile's center is inside this mob's body: the
+     * sprite without its side padding, from the feet up to {@link #HURT_HEIGHT}.
+     */
+    protected boolean isHitBy(Projectile projectile) {
+        double cx = projectile.getCenterX();
+        double cy = projectile.getCenterY();
+        return cx >= x + paddingLeft - HIT_RADIUS && cx <= x + mobSize - paddingRight + HIT_RADIUS
+            && cy >= y - HIT_RADIUS && cy <= y + HURT_HEIGHT + HIT_RADIUS;
+    }
+
+    /**
+     * Called by {@link #checkForHits()} when a projectile hits this mob. An
+     * enemy loses {@link #ENEMY_HIT_DAMAGE} health and dies at zero, and the
+     * player who fired the shot scores the kill.
+     */
+    protected void onHit(Projectile projectile) {
+        health -= ENEMY_HIT_DAMAGE;
+        if (health <= HEALTH_EPSILON) {
+            remove();
+            if (projectile.getFiredBy() instanceof PlayerMob player) player.scoredKill();
+        }
+    }
+
+    /** Gets the health, from 0 to 1. */
+    public double getHealth() {
+        return health;
+    }
+
     public enum Direction {
         UP, DOWN, LEFT, RIGHT
     }
 
     @Override
     public void remove() {
+        if (removed) return;
         super.remove();
-        new ParticleSpawner(x, y, 0, 10, 100, level);
+        level.add(new ParticleSpawner(x + mobSize / 2.0, y + HURT_HEIGHT / 2.0, 0, 10, 100, level));
     }
 
     public int getPaddingLeft() {

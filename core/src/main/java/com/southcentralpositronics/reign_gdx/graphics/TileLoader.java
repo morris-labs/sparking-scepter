@@ -17,6 +17,8 @@ public class TileLoader {
     public static final int COLOR_WALLALT = 0xFF6C3279;
     public static final int COLOR_FLOOR   = 0xFF434343;
     public static final int COLOR_VOID    = 0xFF280A2B;
+    /** Void in the Java2D level files, such as {@code SpawnLevel.png}. */
+    public static final int COLOR_VOID_WHITE = 0xFFFFFFFF;
 
     public static Map<Integer, Tile> loadTiles(TextureAtlas atlas) {
         Map<Integer, Tile> tileMap = new HashMap<>();
@@ -28,6 +30,7 @@ public class TileLoader {
         tileMap.put(COLOR_WALLALT, createTile(Tile.tileType.wall_alt, true, atlas, "wall_alt"));
         tileMap.put(COLOR_FLOOR,   createTile(Tile.tileType.floor, false, atlas, "floor"));
         tileMap.put(COLOR_VOID,    createTile(Tile.tileType.void_tile, true, atlas, "void_tile")); // fallback
+        tileMap.put(COLOR_VOID_WHITE, tileMap.get(COLOR_VOID));
 
         return tileMap;
     }

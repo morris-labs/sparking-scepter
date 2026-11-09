@@ -24,7 +24,9 @@ public class mapEditorLauncher {
 //        configuration.useVsync(false);
         //// Limits FPS to the refresh rate of the currently active monitor, plus 1 to try to match fractional
         //// refresh rates. The Vsync setting above should limit the actual FPS to match the monitor.
-        configuration.setForegroundFPS(Lwjgl3ApplicationConfiguration.getDisplayMode().refreshRate + 1);
+        //// Some displays, such as Xvfb, report a refresh rate of 0, which would cap the game at 1 FPS.
+        int refreshRate = Lwjgl3ApplicationConfiguration.getDisplayMode().refreshRate;
+        configuration.setForegroundFPS((refreshRate > 0 ? refreshRate : 60) + 1);
 //        configuration.setForegroundFPS(0);
         //// If you remove the above line and set Vsync to false, you can get unlimited FPS, which can be
         //// useful for testing performance, but can also be very stressful to some hardware.
