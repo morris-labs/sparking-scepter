@@ -22,7 +22,6 @@ public class Mob extends Entity {
     protected static final int   tileSize           = 16;
     protected static final int   mobSize            = 32;
     protected              float shootCooldown      = 0f;
-    protected static final float SHOOT_DELAY        = 0.5f; // 0.2 seconds between shots
     /** The health an enemy loses per hit, as in the Java2D ShooterMob: 10 hits kill. */
     protected static final double ENEMY_HIT_DAMAGE  = 0.1;
     /** Absorbs floating-point error so 10 hits of 0.1 reach zero. */
@@ -222,7 +221,8 @@ public class Mob extends Entity {
         double  dy         = worldMouse.y - getBodyCenterY();
         shootAt(Math.atan2(dy, dx));
 
-        shootCooldown = SHOOT_DELAY; // reset cooldown
+        // The player fires as often as the enemies do.
+        shootCooldown = Projectile.SHOT_DELAY;
     }
 
     /**
