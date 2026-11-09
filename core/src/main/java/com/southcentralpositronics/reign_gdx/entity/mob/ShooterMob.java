@@ -24,7 +24,6 @@ public class ShooterMob extends Mob {
         if (shootCooldown > 0f) shootCooldown -= delta;
 
         shootClosest();
-        checkForHit();
 
         // Update direction every 0.5–1.5 seconds
         if (directionChangeTimer >= random.nextFloat(0.5f, 1.5f)) {
@@ -71,24 +70,4 @@ public class ShooterMob extends Mob {
 //        }
 //    }
 
-    private void checkForHit() {
-        List<Projectile> projectiles = level.getProjectiles();
-        int              hitRange    = 16;
-
-        for (Projectile projectile : projectiles) {
-            if (!(projectile.getFiredBy() instanceof PlayerMob)) continue;
-
-            double dx = (x + collisionOffsetX) - (projectile.getX() + projectile.collisionOffsetX) + 8;
-            double dy = (y + collisionOffsetY) - (projectile.getY() + projectile.collisionOffsetY) + 16;
-
-            if (Math.abs(dx) < hitRange && Math.abs(dy) < hitRange) {
-                projectile.hitTarget();
-                health -= 0.1;
-                if (health <= 0) {
-                    remove();
-                    ((PlayerMob) projectile.getFiredBy()).scoredKill();
-                }
-            }
-        }
-    }
 }

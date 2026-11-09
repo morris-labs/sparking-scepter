@@ -94,6 +94,16 @@ public abstract class Projectile extends Entity {
         return position.y;
     }
 
+    /** Gets the x coordinate of the center of the drawn projectile. */
+    public double getCenterX() {
+        return position.x + collisionOffsetX + (texture != null ? texture.getRegionWidth() / 2.0 : 0);
+    }
+
+    /** Gets the y coordinate of the center of the drawn projectile. */
+    public double getCenterY() {
+        return position.y + collisionOffsetY + (texture != null ? texture.getRegionHeight() / 2.0 : 0);
+    }
+
     public TextureRegion getTexture() {
         return texture;
     }

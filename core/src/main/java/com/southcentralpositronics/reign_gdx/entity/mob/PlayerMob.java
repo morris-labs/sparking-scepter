@@ -5,7 +5,6 @@ import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
 import com.southcentralpositronics.reign_gdx.input.Keyboard;
 import com.southcentralpositronics.reign_gdx.input.Mouse;
 
-import java.util.List;
 
 public class PlayerMob extends Mob {
     private Keyboard keyboard;
@@ -15,6 +14,8 @@ public class PlayerMob extends Mob {
     private final double  speed    = 2;
     private       boolean shooting = false;
     public        long    score    = 0;
+    /** The health the player loses per enemy hit, as in the Java2D version. */
+    private static final double PLAYER_HIT_DAMAGE = 0.01;
     protected     int     height;
     protected     int     width;
 
@@ -72,30 +73,36 @@ public class PlayerMob extends Mob {
             firePlayerSpell();  // your existing method
         }
 
-//        checkForHit();
         clearProjectiles();
     }
 
-    private void checkForHit() {
-        List<Projectile> projectiles = level.getProjectiles();
-        for (Projectile p : projectiles) {
-            if (!(p.getFiredBy() instanceof PlayerMob)) {
-                int dx = (int) ((x + collisionOffsetX) - (p.getX() + p.collisionOffsetX) + 8);
-                int dy = (int) ((y + collisionOffsetY) - (p.getY() + p.collisionOffsetY) + 16);
-                if (Math.abs(dx) < 16 && Math.abs(dy) < 16) {
-                    p.hitTarget();
-                }
-            }
-        }
-    }
 
     private void clearProjectiles() {
         level.getProjectiles().removeIf(Projectile::isRemoved);
     }
 
+    /**
+     * Called when this player kills an enemy. The score goes up by one kill,
+     * shown as 100 points, and the player heals by half, up to full health.
+     * The Java2D version didn't cap the healing.
+     */
     public void scoredKill() {
         score++;
-        health += 0.5;
+        health = Math.min(1.0, health + 0.5);
+    }
+
+    /**
+     * Takes {@link #PLAYER_HIT_DAMAGE} health per enemy hit. As in the Java2D
+     * version, health stops at zero and the player doesn't die.
+     */
+    @Override
+    protected void onHit(Projectile projectile) {
+        health = Math.max(0.0, health - PLAYER_HIT_DAMAGE);
+    }
+
+    /** Gets the number of kills; the HUD shows 100 points per kill. */
+    public long getScore() {
+        return score;
     }
 
     public String getName() {

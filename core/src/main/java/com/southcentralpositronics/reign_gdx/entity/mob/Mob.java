@@ -23,6 +23,14 @@ public class Mob extends Entity {
     protected static final int   mobSize            = 32;
     protected              float shootCooldown      = 0f;
     protected static final float SHOOT_DELAY        = 0.5f; // 0.2 seconds between shots
+    /** The health an enemy loses per hit, as in the Java2D ShooterMob: 10 hits kill. */
+    protected static final double ENEMY_HIT_DAMAGE  = 0.1;
+    /** Absorbs floating-point error so 10 hits of 0.1 reach zero. */
+    protected static final double HEALTH_EPSILON    = 1e-9;
+    /** The height of the body that projectiles can hit, from the feet up, in pixels. */
+    protected static final int    HURT_HEIGHT       = 24;
+    /** How far outside the body a projectile's center still counts as a hit, in pixels. */
+    protected static final int    HIT_RADIUS        = 4;
     /** The atlas region prefix of the enemy sprite, ported from the Java2D dummy sheet. */
     protected static final String ENEMY_SPRITE      = "King_Berno";
 
@@ -61,6 +69,7 @@ public class Mob extends Entity {
      * corridor one tile wide.
      */
     protected Mob() {
+        health        = 1.0;
         paddingLeft   = 8;
         paddingRight  = 8;
         paddingTop    = 24;
@@ -244,14 +253,64 @@ public class Mob extends Entity {
         return level.tileCollision(x, y, mobSize, mobSize, paddingLeft, paddingRight, paddingTop, paddingBottom);
     }
 
+    /**
+     * Applies every projectile that hits this mob. Enemies take hits from
+     * player projectiles, and players take hits from enemy projectiles.
+     * {@link Level#update(float)} calls this once per frame.
+     */
+    public void checkForHits() {
+        if (removed) return;
+        List<Projectile> projectiles = level.getProjectiles();
+        for (int i = 0, n = projectiles.size(); i < n; i++) {
+            Projectile projectile = projectiles.get(i);
+            if (projectile.isRemoved()) continue;
+            boolean firedByPlayer = projectile.getFiredBy() instanceof PlayerMob;
+            if (firedByPlayer == (this instanceof PlayerMob)) continue;
+            if (!isHitBy(projectile)) continue;
+            projectile.hitTarget();
+            onHit(projectile);
+            if (removed) return;
+        }
+    }
+
+    /**
+     * Checks whether a projectile's center is inside this mob's body: the
+     * sprite without its side padding, from the feet up to {@link #HURT_HEIGHT}.
+     */
+    protected boolean isHitBy(Projectile projectile) {
+        double cx = projectile.getCenterX();
+        double cy = projectile.getCenterY();
+        return cx >= x + paddingLeft - HIT_RADIUS && cx <= x + mobSize - paddingRight + HIT_RADIUS
+            && cy >= y - HIT_RADIUS && cy <= y + HURT_HEIGHT + HIT_RADIUS;
+    }
+
+    /**
+     * Called by {@link #checkForHits()} when a projectile hits this mob. An
+     * enemy loses {@link #ENEMY_HIT_DAMAGE} health and dies at zero, and the
+     * player who fired the shot scores the kill.
+     */
+    protected void onHit(Projectile projectile) {
+        health -= ENEMY_HIT_DAMAGE;
+        if (health <= HEALTH_EPSILON) {
+            remove();
+            if (projectile.getFiredBy() instanceof PlayerMob player) player.scoredKill();
+        }
+    }
+
+    /** Gets the health, from 0 to 1. */
+    public double getHealth() {
+        return health;
+    }
+
     public enum Direction {
         UP, DOWN, LEFT, RIGHT
     }
 
     @Override
     public void remove() {
+        if (removed) return;
         super.remove();
-        new ParticleSpawner(x, y, 0, 10, 100, level);
+        level.add(new ParticleSpawner(x + mobSize / 2.0, y + HURT_HEIGHT / 2.0, 0, 10, 100, level));
     }
 
     public int getPaddingLeft() {

@@ -16,7 +16,6 @@ import com.southcentralpositronics.reign_gdx.entity.mob.Mob;
 import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
 import com.southcentralpositronics.reign_gdx.entity.mob.ShooterMob;
 import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
-import com.southcentralpositronics.reign_gdx.entity.projectile.SpellProjectile;
 import com.southcentralpositronics.reign_gdx.graphics.TileLoader;
 import com.southcentralpositronics.reign_gdx.graphics.TileMapBuilder;
 import com.southcentralpositronics.reign_gdx.level.tile.Node;
@@ -48,11 +47,11 @@ public class Level {
     private int xScroll, yScroll;
 
     /** The number of shooter enemies that {@link #generateMobs()} spawns. */
-    private static final int    SHOOTER_COUNT      = 3;
+    private static final int    SHOOTER_COUNT      = 10;
     /** The number of chaser enemies that {@link #generateMobs()} spawns. */
-    private static final int    CHASER_COUNT       = 2;
+    private static final int    CHASER_COUNT       = 5;
     /** The number of A* chaser enemies that {@link #generateMobs()} spawns. */
-    private static final int    ASTAR_CHASER_COUNT = 2;
+    private static final int    ASTAR_CHASER_COUNT = 5;
     /** The closest that a spawned mob can be to the player, in pixels. */
     private static final double MIN_SPAWN_DISTANCE = 6 * 16;
 
@@ -93,7 +92,12 @@ public class Level {
         for (int i = 0, n = particles.size(); i < n; i++) particles.get(i).update();
         for (int i = 0, n = mobs.size(); i < n; i++) mobs.get(i).update(delta);
         for (int i = 0, n = players.size(); i < n; i++) players.get(i).update(delta);
+        for (int i = 0, n = mobs.size(); i < n; i++) mobs.get(i).checkForHits();
+        for (int i = 0, n = players.size(); i < n; i++) players.get(i).checkForHits();
         remove();
+
+        // As in the Java2D SpawnLevel, a new wave spawns once every enemy is dead.
+        if (mobs.isEmpty() && getClientPlayer() != null) generateMobs();
     }
 
     private void remove() {
@@ -161,7 +165,7 @@ public class Level {
         e.init(this);
         if (e instanceof Particle) {
             particles.add((Particle) e);
-        } else if (e instanceof SpellProjectile) {
+        } else if (e instanceof Projectile) {
             projectiles.add((Projectile) e);
         } else if (e instanceof PlayerMob) {
             players.add((PlayerMob) e);
