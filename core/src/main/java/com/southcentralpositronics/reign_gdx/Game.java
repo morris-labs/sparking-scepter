@@ -130,7 +130,8 @@ public class Game extends ApplicationAdapter {
         // Clamp Y
         float cameraY = MathUtils.clamp((int) player.getY(), halfHeight, mapPixelHeight - halfHeight);
 
-        camera.position.set(cameraX, cameraY, 0);
+        // Keep the camera on whole world pixels; the clamp bounds can be fractional.
+        camera.position.set(Math.round(cameraX), Math.round(cameraY), 0);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
         shapeRenderer.setProjectionMatrix(camera.combined);
