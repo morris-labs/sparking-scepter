@@ -50,7 +50,7 @@ public class Game extends ApplicationAdapter {
         String mobAtlasPath  = "atlas/mobs.atlas";
         String tileAtlasPath = "atlas/Tiles.atlas";
         // The 40x75 spawn level that the Java2D Reign loads.
-        mapPath = "levels/SpawnLevel.png";
+        mapPath = "levels/TestMap.png";
         mobAtlas      = new TextureAtlas(Gdx.files.internal(mobAtlasPath));
         tileAtlas     = new TextureAtlas(Gdx.files.internal(tileAtlasPath));
         shapeRenderer = new ShapeRenderer();
