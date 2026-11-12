@@ -1,16 +1,18 @@
 package com.southcentralpositronics.reign_gdx.util.mapEditor;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.PixmapIO;
 
+/** Writes level PNG files and converts between ARGB and RGBA colors. */
 public final class PixelMapIO {
     public static void writePNG(FileHandle out, Pixmap pix) {
         PixmapIO.writePNG(out, pix);
-        System.out.println("Saved map → " + out.path());
+        Gdx.app.log("PixelMapIO", "Saved map to " + out.path());
     }
 
-    /** converts 0xAARRGGBB ➜ 0xRRGGBBAA */
+    /** Converts 0xAARRGGBB to 0xRRGGBBAA. */
     static int argbToRgba(int argb){
         int a = (argb >>> 24) & 0xFF;
         int r = (argb >>> 16) & 0xFF;
@@ -19,7 +21,7 @@ public final class PixelMapIO {
         return (r << 24) | (g << 16) | (b << 8) | a;
     }
 
-    /** converts 0xRRGGBBAA ➜ 0xAARRGGBB */
+    /** Converts 0xRRGGBBAA to 0xAARRGGBB. */
     static int rgbaToArgb(int rgba) {
         int r = (rgba >>> 24) & 0xFF;
         int g = (rgba >>> 16) & 0xFF;

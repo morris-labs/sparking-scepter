@@ -1,10 +1,12 @@
 package com.southcentralpositronics.reign_gdx.graphics;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.southcentralpositronics.reign_gdx.level.tile.Tile;
 
 import java.util.Map;
 
+/** Turns a level PNG into a grid of tiles. */
 public class TileMapBuilder {
 
     /**
@@ -34,7 +36,7 @@ public class TileMapBuilder {
 
                 Tile baseTile = tileTypes.get(pixelColor);
                 if (baseTile == null) {
-                    System.out.printf("Unknown tile color: 0x%08X at (%d, %d)%n", pixelColor, x, y);
+                    Gdx.app.log("TileMapBuilder", String.format("Unknown tile color 0x%08X at (%d, %d); using void", pixelColor, x, y));
                     baseTile = tileTypes.getOrDefault(TileLoader.COLOR_VOID, new Tile(Tile.tileType.void_tile, true));
                 }
 

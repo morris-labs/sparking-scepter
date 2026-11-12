@@ -9,27 +9,25 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 
 /**
- * Very thin wrapper around Swing JFileChooser.
+ * Shows Swing open and save dialogs for one file extension.
  */
 public final class FileChooser {
 
     private FileChooser() { /* static only */ }
 
     /**
-     * Show an *open* dialog filtered to a single extension (e.g. "png").
+     * Shows an open dialog for one extension, such as {@code png}. Returns null if the user cancels.
      */
     public static FileHandle desktopOpen(String extension) {
         return choose(false, extension);
     }
 
     /**
-     * Show a *save* dialog filtered to a single extension (e.g. "png").
+     * Shows a save dialog for one extension, such as {@code png}, and adds the extension if it's missing. Returns null if the user cancels.
      */
     public static FileHandle desktopSave(String extension) {
         return choose(true, extension);
     }
-
-    // ---------------------------------------------------------------------
 
     private static FileHandle choose(boolean save, String ext) {
         if (Gdx.app.getType() != Application.ApplicationType.Desktop) {
@@ -40,14 +38,14 @@ public final class FileChooser {
         final JFileChooser fc = new JFileChooser();
         fc.setFileFilter(new FileNameExtensionFilter("*." + ext, ext));
 
-        /* Swing must run on the EDT – block until the user closes the dialog. */
+        // Swing must run on the event dispatch thread; wait until the dialog closes.
         final int[] result = new int[1];
         try {
             SwingUtilities.invokeAndWait(() -> {
                 result[0] = save ? fc.showSaveDialog(null) : fc.showOpenDialog(null);
             });
         } catch (Exception e) {
-            e.printStackTrace();
+            Gdx.app.error("FileChooser", "Couldn't show the file dialog", e);
             return null;
         }
 

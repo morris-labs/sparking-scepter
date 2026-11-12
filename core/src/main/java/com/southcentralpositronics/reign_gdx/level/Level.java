@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.viewport.Viewport;
 import com.southcentralpositronics.reign_gdx.Game;
 import com.southcentralpositronics.reign_gdx.entity.Entity;
 import com.southcentralpositronics.reign_gdx.entity.Particle;
@@ -37,14 +36,11 @@ public class Level {
     private final ArrayList<Particle>   particles   = new ArrayList<>();
     private final ArrayList<PlayerMob>  players     = new ArrayList<>();
     private final ArrayList<Mob>        mobs        = new ArrayList<>();
-    private       PlayerMob             player      = getClientPlayer();
 
     protected int width, height;
     public    Tile[][] tiles;
-    protected Viewport viewport;
     protected Game     game;
 
-    private int xScroll, yScroll;
     /** True after Clear Mobs, so the empty level doesn't spawn a new wave at once. */
     private boolean wavesPaused = false;
 
@@ -116,57 +112,30 @@ public class Level {
         players.removeIf(Entity::isRemoved);
     }
 
+    /** Draws the tiles, then particles, projectiles, enemies, and players. The camera handles scrolling. */
     public void render(SpriteBatch batch) {
-        int tileSize     = 16; // Assuming tiles are 16x16 pixels
-        int screenWidth  = Game.VIEWPORT_WIDTH;
-        int screenHeight = Game.VIEWPORT_HEIGHT;
-        setScroll((int) (player.getX() - (double) screenWidth / 2), (int) (player.getY() - (double) screenHeight / 2));
-
-        xScroll = 0;
-        yScroll = 0;
-
-        int x0 = xScroll / tileSize;
-        int x1 = (xScroll + screenWidth + tileSize) / tileSize;
-        int y0 = yScroll / tileSize;
-        int y1 = (yScroll + screenHeight + tileSize) / tileSize;
-
-        renderTiles(batch, tiles, xScroll, yScroll, tileSize);
-
-        // Render entities
-        for (Entity e : entities) e.render(batch, xScroll, yScroll);
+        renderTiles(batch);
         for (Particle p : particles) p.render(batch);
         for (Projectile p : projectiles) p.render(batch);
         for (Mob m : mobs) m.render(batch);
         for (PlayerMob p : players) p.render(batch);
     }
 
-    public void renderTiles(SpriteBatch batch, Tile[][] tileGrid, int xScroll, int yScroll, int tileSize) {
-        width  = tileGrid.length;
-        height = tileGrid[0].length;
-
+    private void renderTiles(SpriteBatch batch) {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                Tile tile = tileGrid[x][y];
+                Tile tile = tiles[x][y];
                 if (tile == null || tile.getTexture() == null) continue;
-
-                float renderX = x * tileSize - xScroll;
-                float renderY = y * tileSize - yScroll;
-
-                batch.draw(tile.getTexture(), renderX, renderY, tileSize, tileSize);
+                batch.draw(tile.getTexture(), x * Tile.SIZE, y * Tile.SIZE, Tile.SIZE, Tile.SIZE);
             }
         }
     }
 
-
     public Tile getTileAt(int x, int y) {
         if (x < 0 || y < 0 || x >= tiles.length || y >= tiles[0].length) {
-            return null; // Or optionally return a default void_tile
+            return null;
         }
         return tiles[x][y];
-    }
-
-    public Tile.tileType getTile(int x, int y) {
-        return getTileAt(x, y).tile_Type;
     }
 
     public void add(Entity e) {
@@ -184,24 +153,8 @@ public class Level {
         }
     }
 
-    public void setScroll(int xScroll, int yScroll) {
-        this.xScroll = xScroll;
-        this.yScroll = yScroll;
-    }
-
     public PlayerMob getClientPlayer() {
         return !players.isEmpty() ? players.getFirst() : null;
-    }
-
-    public List<Entity> getEntitiesInRadius(Entity e, int radius) {
-        List<Entity> result = new ArrayList<>();
-        for (Entity entity : entities) {
-            if (entity.equals(e)) continue;
-            if (e.getPosition().dst(entity.getPosition()) <= radius) {
-                result.add(entity);
-            }
-        }
-        return result;
     }
 
     public List<PlayerMob> getPlayersInRadius(Entity e, float radius) {
@@ -213,13 +166,6 @@ public class Level {
         }
         return result;
     }
-
-//    public void onEvent(Event event) {
-//        PlayerMob clientPlayer = getClientPlayer();
-//        if (clientPlayer != null) {
-//            clientPlayer.onEvent(event);
-//        }
-//    }
 
     /**
      * Spawns the starting enemies for this level, as the Java2D
@@ -245,7 +191,6 @@ public class Level {
      * @return The number of mobs spawned.
      */
     public int spawnMobs(int count, BiFunction<Integer, Integer, Mob> factory) {
-        int       tileSize = 16;
         PlayerMob player   = getClientPlayer();
         int       spawned  = 0;
 
@@ -255,7 +200,7 @@ public class Level {
                 int    ty = MathUtils.random(0, height - 1);
                 Tile tile = tiles[tx][ty];
                 if (tile == null || tile.isSolid()) continue;
-                if (player != null && Math.hypot(player.getTileX() - tx, player.getTileY() - ty) * tileSize
+                if (player != null && Math.hypot(player.getTileX() - tx, player.getTileY() - ty) * Tile.SIZE
                     < MIN_SPAWN_DISTANCE) {
                     continue;
                 }
@@ -277,16 +222,18 @@ public class Level {
         return projectiles;
     }
 
+    /**
+     * Checks whether a box, shrunk by its paddings, overlaps a solid tile or
+     * leaves the map.
+     */
     public boolean tileCollision(double x, double y, int width, int height, int padLeft, int padRight, int padTop, int padBottom) {
-        int tileSize = 16;
+        int tileSize = Tile.SIZE;
 
-        // Shrink the hitbox by the given paddings
         double hitboxX      = x + padLeft;
         double hitboxY      = y + padBottom;
         int    hitboxWidth  = width - padLeft - padRight;
         int    hitboxHeight = height - padTop - padBottom;
 
-        // Compute tile coordinates
         int left   = (int) (hitboxX / tileSize);
         int right  = (int) ((hitboxX + hitboxWidth - 1) / tileSize);
         int top    = (int) (hitboxY / tileSize);
@@ -295,7 +242,7 @@ public class Level {
         for (int tx = left; tx <= right; tx++) {
             for (int ty = top; ty <= bottom; ty++) {
                 if (tx < 0 || ty < 0 || tx >= tiles.length || ty >= tiles[0].length) {
-                    return true; // Out of bounds = solid
+                    return true; // Out of bounds counts as solid.
                 }
 
                 Tile tile = tiles[tx][ty];
@@ -305,42 +252,11 @@ public class Level {
             }
         }
 
-        return false; // All tiles pass
+        return false;
     }
 
     public boolean tileCollision(double x, double y, int width, int height) {
         return tileCollision(x, y, width, height, 0, 0, 0, 0);
-    }
-
-//    public boolean tileCollision(double x, double y, int width, int height) {
-//        int tileSize = 16;
-//
-//        // Check all 4 corners
-//        int left   = (int) (x / tileSize);
-//        int right  = (int) ((x + width - 1) / tileSize);
-//        int top    = (int) (y / tileSize);
-//        int bottom = (int) ((y + height - 1) / tileSize);
-//
-//        // Check each tile the bounding box touches
-//        for (int tx = left; tx <= right; tx++) {
-//            for (int ty = top; ty <= bottom; ty++) {
-//                if (tx < 0 || ty < 0 || tx >= tiles.length || ty >= tiles[0].length) {
-//                    return true; // Out-of-bounds = solid
-//                }
-//
-//                Tile tile = tiles[tx][ty];
-//                if (tile != null && tile.isSolid()) {
-//                    return true;
-//                }
-//            }
-//        }
-//
-//        return false; // All tiles pass
-//    }
-
-
-    public void setPlayer(PlayerMob player) {
-        this.player = player;
     }
 
     /**
@@ -426,10 +342,6 @@ public class Level {
     }
 
 
-    public ArrayList<Entity> getEntities() {
-        return entities;
-    }
-
     public int getWidth() {
         return width;
     }
@@ -442,23 +354,20 @@ public class Level {
         return game;
     }
 
+    /**
+     * Picks a random open tile away from the map edge. After {@code width *
+     * height} misses, it gives up and returns tile (0, 0).
+     */
     public TileCoordinates getRandomNonSolidTile() {
-        // Fail-early safety in case the map is all solid
         if (tiles == null || tiles.length == 0) throw new IllegalStateException("Level not loaded");
 
-        int tries    = 0;                 // avoids an infinite loop on maps with few open spots
-        int maxTries = width * height; // reasonable upper bound
-
-        while (tries++ < maxTries) {
-            int  x = MathUtils.random(1, width - 2); // 1..width-2 keeps you off the outer wall
-            int  y = MathUtils.random(1, height - 2); // ditto for Y
+        int maxTries = width * height;
+        for (int tries = 0; tries < maxTries; tries++) {
+            int  x = MathUtils.random(1, width - 2);
+            int  y = MathUtils.random(1, height - 2);
             Tile t = tiles[x][y];
-            if (t != null && !t.isSolid()) {
-                return new TileCoordinates(x, y);    // found a walkable tile
-            }
+            if (t != null && !t.isSolid()) return new TileCoordinates(x, y);
         }
         return new TileCoordinates(0, 0);
     }
-
-    // Additional methods like generateMobs, findPath, tileCollision can be implemented similarly
 }

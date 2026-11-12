@@ -1,7 +1,6 @@
 package com.southcentralpositronics.reign_gdx.graphics;
 
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.southcentralpositronics.reign_gdx.level.tile.Tile;
 
 import java.util.HashMap;

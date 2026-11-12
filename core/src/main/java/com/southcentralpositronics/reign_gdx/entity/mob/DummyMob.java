@@ -2,16 +2,16 @@ package com.southcentralpositronics.reign_gdx.entity.mob;
 
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
+/** An enemy that wanders and never attacks. Nothing spawns it by default. */
 public class DummyMob extends Mob {
     private int   xa                   = random.nextInt(3) - 1;
     private int   ya                   = random.nextInt(3) - 1;
-    private float time                 = 0;
     private float directionChangeTimer = 0;
 
     public DummyMob(int x, int y, TextureAtlas atlas) {
         loadAnimations(atlas, ENEMY_SPRITE);
         placeOnTile(x, y);
-        this.type       = Type.ENEMY;
+        this.type = Type.ENEMY;
     }
 
     private void updateRandomDirection() {
@@ -30,8 +30,8 @@ public class DummyMob extends Mob {
         }
     }
 
+    @Override
     public void update(float delta) {
-        time += delta;
         updateRandomDirection();
 
         if (xa != 0 || ya != 0) {

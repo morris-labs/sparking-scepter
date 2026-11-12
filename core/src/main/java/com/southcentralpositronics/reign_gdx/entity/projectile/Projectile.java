@@ -8,7 +8,8 @@ import com.southcentralpositronics.reign_gdx.entity.spawner.ParticleSpawner;
 import com.southcentralpositronics.reign_gdx.level.Level;
 
 public abstract class Projectile extends Entity {
-    public static final float SHOT_DELAY = 0.125f; // 8 frames at 60fps
+    /** The time between shots, in seconds: 8 frames at 60 FPS. */
+    public static final float SHOT_DELAY = 0.125f;
 
     protected Vector2 position;
     protected Vector2 origin;
@@ -17,7 +18,6 @@ public abstract class Projectile extends Entity {
     protected double angle;
     protected double speed;
     protected double range;
-    protected double damage;
 
     protected TextureRegion texture;
     protected Entity        firedBy;

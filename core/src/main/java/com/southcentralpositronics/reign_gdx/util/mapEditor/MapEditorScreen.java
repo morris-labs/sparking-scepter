@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.SplitPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
+/** The editor screen: the grid on the left and the sidebar on the right. */
 public class MapEditorScreen extends ScreenAdapter {
     private final Skin          skin;
     private final Stage         uiStage;
@@ -18,23 +19,16 @@ public class MapEditorScreen extends ScreenAdapter {
 
     public MapEditorScreen() {
         uiStage = new Stage(new ScreenViewport());
-//        uiStage.setDebugAll(true);
-//        skin = new Skin(Gdx.files.internal("ui/uiskin/uiskin.json"));
         skin = new Skin(Gdx.files.internal("ui/default/uiskin.json"));
 
-        // 1. tile atlas
         TextureAtlas tileAtlas = new TextureAtlas(Gdx.files.internal("atlas/Tiles.atlas"));
 
-        // 2. paintable widget
         grid = new EditorGrid(tileAtlas);
 
-        // 3. sidebar
         sidebar = new EditorSidebar(skin, tileAtlas, grid);
-        // (optional) debug background
         sidebar.setBackground(skin.newDrawable("white", 0.2f, 0.2f, 0.2f, 1f));
 
-        // 4. layout – SplitPane LEFT/RIGHT
-        SplitPane split = new SplitPane(grid, sidebar, false, skin); // false = horizontal
+        SplitPane split = new SplitPane(grid, sidebar, false, skin); // false: side by side
         split.setSplitAmount(0.66f);
 
         Table root = new Table();
@@ -42,7 +36,6 @@ public class MapEditorScreen extends ScreenAdapter {
         root.add(split).grow().top();
         uiStage.addActor(root);
 
-        // single input processor
         Gdx.input.setInputProcessor(uiStage);
     }
 

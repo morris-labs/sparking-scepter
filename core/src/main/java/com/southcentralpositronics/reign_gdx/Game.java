@@ -16,6 +16,7 @@ import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
 import com.southcentralpositronics.reign_gdx.input.Keyboard;
 import com.southcentralpositronics.reign_gdx.input.Mouse;
 import com.southcentralpositronics.reign_gdx.level.Level;
+import com.southcentralpositronics.reign_gdx.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.level.tile.TileCoordinates;
 import com.southcentralpositronics.reign_gdx.ui.Hud;
 
@@ -26,8 +27,6 @@ public class Game extends ApplicationAdapter {
     public static final int           VIEWPORT_WIDTH  = WIDTH / SCALE;
     public static final int           VIEWPORT_HEIGHT = HEIGHT / SCALE;
     public static final String        TITLE           = "Reign";
-    public static       int[]         screenCenter    = new int[2];
-    public static       float         updateInt;
     protected           ShapeRenderer shapeRenderer;
     protected           String        mapPath;
 
@@ -46,14 +45,12 @@ public class Game extends ApplicationAdapter {
     public void create() {
         String mobAtlasPath  = "atlas/mobs.atlas";
         String tileAtlasPath = "atlas/Tiles.atlas";
-        // The 40x75 spawn level that the Java2D Reign loads.
+        // The 64x64 test map; levels/SpawnLevel.png is the Java2D spawn level.
         mapPath = "levels/TestMap.png";
         mobAtlas      = new TextureAtlas(Gdx.files.internal(mobAtlasPath));
         tileAtlas     = new TextureAtlas(Gdx.files.internal(tileAtlasPath));
         shapeRenderer = new ShapeRenderer();
 
-        screenCenter[0] = VIEWPORT_WIDTH / 2;
-        screenCenter[1] = VIEWPORT_HEIGHT / 2;
         batch           = new SpriteBatch();
         mobAtlas        = new TextureAtlas(Gdx.files.internal(mobAtlasPath));
         keyboard        = new Keyboard();
@@ -68,16 +65,11 @@ public class Game extends ApplicationAdapter {
 
 
         level = new Level(this);
-        // -------------------------------------------------------------
-        // Pick a random walkable tile and convert it to pixel coords
-        // -------------------------------------------------------------
         // TileCoordinates holds pixels; placeOnTile() takes tile indexes.
         TileCoordinates spawnTile = level.getRandomNonSolidTile();
         player = new PlayerMob(this, 0, 0, "King Steve");
-        player.placeOnTile(spawnTile.getX() / 16, spawnTile.getY() / 16);
-//        player = new PlayerMob(this, 200, 200, "King Steve");
+        player.placeOnTile(spawnTile.getX() / Tile.SIZE, spawnTile.getY() / Tile.SIZE);
         level.add(player);
-        level.setPlayer(player);
         level.generateMobs();
 
         hud = new Hud(player, level);
@@ -93,11 +85,9 @@ public class Game extends ApplicationAdapter {
     }
 
 
-    //    @Override
+    @Override
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
-
-//        System.out.println("FPS: " + Gdx.graphics.getFramesPerSecond());
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -109,17 +99,14 @@ public class Game extends ApplicationAdapter {
         hud.update(delta);
         viewport.apply();
 
-        // You can move camera here if following the player, etc.
-        // camera.position.set(...);
+        // Follow the player, but stop at the map edges.
         float halfWidth  = camera.viewportWidth / 2;
         float halfHeight = camera.viewportHeight / 2;
 
-        int mapPixelWidth  = level.getWidth() * 16;
-        int mapPixelHeight = level.getHeight() * 16;
+        int mapPixelWidth  = level.getWidth() * Tile.SIZE;
+        int mapPixelHeight = level.getHeight() * Tile.SIZE;
 
-        // Clamp X
         float cameraX = MathUtils.clamp((int) player.getX(), halfWidth, mapPixelWidth - halfWidth);
-        // Clamp Y
         float cameraY = MathUtils.clamp((int) player.getY(), halfHeight, mapPixelHeight - halfHeight);
 
         // Keep the camera on whole world pixels; the clamp bounds can be fractional.
@@ -166,14 +153,6 @@ public class Game extends ApplicationAdapter {
         // Dispose of any other resources you manually load
     }
 
-    public static int getWindowWidth() {
-        return VIEWPORT_WIDTH * SCALE;
-    }
-
-    public static int getWindowHeight() {
-        return VIEWPORT_HEIGHT * SCALE;
-    }
-
     public Level getLevel() {
         return level;
     }
@@ -188,10 +167,6 @@ public class Game extends ApplicationAdapter {
 
     public Viewport getViewport() {
         return viewport;
-    }
-
-    public SpriteBatch getBatch() {
-        return batch;
     }
 
     public TextureAtlas getMobAtlas() {

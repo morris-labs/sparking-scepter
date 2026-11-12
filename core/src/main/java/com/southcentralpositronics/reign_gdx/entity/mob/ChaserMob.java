@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 import java.util.List;
 
+/** An enemy that walks straight at the player, ignoring walls. */
 public class ChaserMob extends Mob {
     private       double xa    = 0;
     private       double ya    = 0;
@@ -12,7 +13,7 @@ public class ChaserMob extends Mob {
     public ChaserMob(int x, int y, TextureAtlas atlas) {
         loadAnimations(atlas, ENEMY_SPRITE);
         placeOnTile(x, y);
-        this.type       = Type.ENEMY;
+        this.type = Type.ENEMY;
     }
 
     private void chasePlayer() {
@@ -37,6 +38,7 @@ public class ChaserMob extends Mob {
         }
     }
 
+    @Override
     public void update(float delta) {
         chasePlayer();
 
@@ -47,7 +49,6 @@ public class ChaserMob extends Mob {
             direction = xa < 0 ? Direction.LEFT : Direction.RIGHT;
         }
 
-        // Use Mob’s animation handling
         super.updateAnimation(delta, walking, direction);
     }
 }

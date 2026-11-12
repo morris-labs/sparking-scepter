@@ -1,7 +1,6 @@
 package com.southcentralpositronics.reign_gdx.util.mapEditor;
 
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -10,7 +9,6 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.IntIntMap;
 import com.badlogic.gdx.utils.Scaling;
@@ -18,16 +16,18 @@ import com.southcentralpositronics.reign_gdx.graphics.TileLoader;
 
 import static com.southcentralpositronics.reign_gdx.util.mapEditor.PixelMapIO.writePNG;
 
+/**
+ * The editor's controls: map size, New, Clear, Save PNG, Load PNG, zoom, and
+ * the tile palette. Save JSON, Load JSON, Save, and Exit aren't wired yet.
+ */
 public class EditorSidebar extends Table {
-
 
     public EditorSidebar(Skin skin, TextureAtlas atlas, EditorGrid grid) {
         super(skin);
         skin.getFont("default-font").getData().setScale(3f);
-        /* ── wipe the gradient that comes with the skin’s TableStyle ── */
         defaults().pad(6).left().top();
 
-        /* --- map size inputs --- */
+        // Map size inputs.
         TextField widthField = new TextField("64", skin);
         widthField.setAlignment(Align.center);
         TextField heightField = new TextField("64", skin);
@@ -44,7 +44,7 @@ public class EditorSidebar extends Table {
         add(heightField).left().padRight(800f);
         row().space(50);
 
-        /* --- buttons --- */
+        // Buttons.
         TextButton savePNG  = new TextButton("Save PNG", skin);
         TextButton loadPNG  = new TextButton("Load PNG", skin);
         TextButton saveJSON = new TextButton("Save JSON", skin);
@@ -58,7 +58,6 @@ public class EditorSidebar extends Table {
         int hPad = 100;
         int vPad = 5;
         table.defaults().pad(vPad, hPad, vPad, hPad).width(300); // outer gap around every button
-//        table.add(newMap).expand().center().width(50).height(100);
 
         table.add(newMap);
         table.add(clear);
@@ -74,10 +73,10 @@ public class EditorSidebar extends Table {
         add(table).grow().center().colspan(2);
         row();
 
-        /* --- zoom slider ---------------------------------------------------- */
-        Label  zoomLbl    = new Label("Zoom: 1.0×", skin);
+        // Zoom slider.
+        Label  zoomLbl    = new Label("Zoom: 1.00x", skin);
         Slider zoomSlider = new Slider(.5f, 8f, 0.1f, false, skin);
-        zoomSlider.setValue(1f);            // start at 1 ×
+        zoomSlider.setValue(1f);
 
         zoomSlider.addListener(new ChangeListener() {
             @Override
@@ -92,20 +91,20 @@ public class EditorSidebar extends Table {
         add(zoomSlider).grow().colspan(2);
         row().space(10);
 
-        /* --- palette --- */
+        // Tile palette.
         add(new Label("Tiles:", skin)).left().row();
         Table      palette = buildPaletteTable(skin, atlas, grid);
         ScrollPane pane    = new ScrollPane(palette, skin);
         add(pane).grow().colspan(2).row();
 
-        /* === button behaviour === */
+        // Button actions.
         newMap.addListener(click(() -> {
             int w = parseInt(widthField.getText(), 64), h = parseInt(heightField.getText(), 64);
             grid.setMapSize(w, h);
         }));
         clear.addListener(click(grid::clear));
         savePNG.addListener(click(() -> {
-            FileHandle fh = FileChooser.desktopSave("png"); // simple util (see note)
+            FileHandle fh = FileChooser.desktopSave("png");
             if (fh != null) writePNG(fh, grid.toPixmap());
         }));
         loadPNG.addListener(click(() -> {
@@ -118,14 +117,10 @@ public class EditorSidebar extends Table {
         }));
     }
 
-    void setMinWidth(int size) {
-        this.defaults().minWidth(size);
-    }
-
     private Table buildPaletteTable(Skin skin, TextureAtlas atlas, EditorGrid grid) {
         Table t = new Table();
         t.defaults().pad(2);
-        IntIntMap map = new IntIntMap();                      // colour → column idx
+        IntIntMap map = new IntIntMap();                      // color to column index
         map.put(TileLoader.COLOR_GRASS, 0);
         map.put(TileLoader.COLOR_HEDGE, 1);
         map.put(TileLoader.COLOR_WATER, 2);
@@ -142,7 +137,7 @@ public class EditorSidebar extends Table {
 
             t.add(img).size(16 * 12).pad(40);
 
-            /* 4️⃣ — wrap to a new row every two icons                */
+            // Two icons per row.
             if ((e.value + 1) % 2 == 0) t.row();
         }
         return t;

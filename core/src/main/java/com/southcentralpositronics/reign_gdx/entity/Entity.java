@@ -1,12 +1,11 @@
 package com.southcentralpositronics.reign_gdx.entity;
 
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.southcentralpositronics.reign_gdx.level.Level;
 
 import java.util.Random;
 
+/** Anything that lives in a level: mobs, projectiles, particles, and spawners. */
 public class Entity {
     protected int paddingLeft, paddingRight, paddingTop, paddingBottom;
     protected final Random  random  = new Random();
@@ -15,20 +14,8 @@ public class Entity {
     protected       int     time    = 0;
     protected       double  x;
     protected       double  y;
-    protected       double  nextX;
-    protected       double  nextY;
-    protected       Sprite  sprite;
     protected       Level   level;
     protected       Type    type;
-
-    public Entity() {
-    }
-
-    public Entity(double x, double y, Sprite sprite) {
-        this.x      = x;
-        this.y      = y;
-        this.sprite = sprite;
-    }
 
     public double getX() {
         return x;
@@ -38,28 +25,12 @@ public class Entity {
         return y;
     }
 
+    /** Runs once per frame. Subclasses override it. */
     public void update() {
-        // Override in subclasses
     }
 
     public void init(Level level) {
         this.level = level;
-    }
-
-    public void render(SpriteBatch batch, int xScroll, int yScroll) {
-//        if (sprite == null) return;
-//
-//        // Calculate screen position relative to camera scroll
-//        float renderX = (float) (x - xScroll);
-//        float renderY = (float) (y - yScroll);
-//        renderX = 0;
-//        renderY = 0;
-//        sprite.setPosition(renderX, renderY);
-//        sprite.draw(batch);
-    }
-
-    public Sprite getSprite() {
-        return sprite;
     }
 
     /**
@@ -73,12 +44,8 @@ public class Entity {
         }
     }
 
-    /**
-     * Hook for subclasses to execute code when entity is removed.
-     */
+    /** Runs once when the entity is removed. Subclasses can override it. */
     protected void onRemove() {
-        // Default empty implementation
-        // e.g., subclasses can spawn particles here
     }
 
     public boolean isRemoved() {
@@ -99,6 +66,5 @@ public class Entity {
 
     public enum Type {
         ENEMY, PLAYER, PARTICLE, PROJECTILE, SPAWNER
-        // Add more types here as needed
     }
 }

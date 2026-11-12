@@ -2,11 +2,15 @@ package com.southcentralpositronics.reign_gdx.level.tile;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
+/** One map tile: its type, whether it blocks movement, and its texture. */
 public class Tile {
+    /** The width and height of a tile, in world pixels. */
+    public static final int SIZE = 16;
+
     public int x, y;
     public boolean       isSolid   = true;
     public tileType      tile_Type = tileType.void_tile;
-    public TextureRegion texture;  // NEW
+    public TextureRegion texture;
 
     public Tile(tileType tileType, boolean isSolid) {
         this.tile_Type = tileType;

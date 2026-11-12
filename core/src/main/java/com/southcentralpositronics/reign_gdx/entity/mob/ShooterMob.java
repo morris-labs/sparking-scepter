@@ -2,10 +2,7 @@ package com.southcentralpositronics.reign_gdx.entity.mob;
 
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
-import com.southcentralpositronics.reign_gdx.entity.projectile.Projectile;
-
-import java.util.List;
-
+/** An enemy that wanders and shoots at the closest player in range. */
 public class ShooterMob extends Mob {
     private int   xa                   = random.nextInt(3) - 1;
     private int   ya                   = random.nextInt(3) - 1;
@@ -14,8 +11,7 @@ public class ShooterMob extends Mob {
     public ShooterMob(int x, int y, TextureAtlas atlas) {
         loadAnimations(atlas, ENEMY_SPRITE);
         placeOnTile(x, y);
-        this.type       = Type.ENEMY;
-        this.health     = 1.0;
+        this.type = Type.ENEMY;
     }
 
     @Override
@@ -25,7 +21,7 @@ public class ShooterMob extends Mob {
 
         shootClosest();
 
-        // Update direction every 0.5–1.5 seconds
+        // Pick a new direction every 0.5 to 1.5 seconds.
         if (directionChangeTimer >= random.nextFloat(0.5f, 1.5f)) {
             directionChangeTimer = 0;
             if (random.nextBoolean()) {
@@ -55,19 +51,4 @@ public class ShooterMob extends Mob {
 
         super.updateAnimation(delta, walking, direction);
     }
-
-//    private void shootClosest() {
-//        if (shootCooldown < 1.5f) return;
-//
-//        List<PlayerMob> players = level.getPlayersInRadius(this, 300);
-//        if (!players.isEmpty()) {
-//            PlayerMob target = players.getFirst();
-//            double dx = target.getX() - this.x;
-//            double dy = target.getY() - this.y;
-//            double angle = Math.atan2(dy, dx);
-//            shoot(x + 8, y + 8, angle); // Fire from center
-//            shootCooldown = 0;
-//        }
-//    }
-
 }

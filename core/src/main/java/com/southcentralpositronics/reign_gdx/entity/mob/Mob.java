@@ -13,13 +13,14 @@ import com.southcentralpositronics.reign_gdx.entity.projectile.SpellProjectile;
 import com.southcentralpositronics.reign_gdx.entity.spawner.ParticleSpawner;
 import com.southcentralpositronics.reign_gdx.graphics.AnimatedSprite;
 import com.southcentralpositronics.reign_gdx.input.Mouse;
+import com.southcentralpositronics.reign_gdx.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.util.Vector2i;
 
 import java.util.List;
 
 public class Mob extends Entity {
     protected static final int   DETECTION_DISTANCE = 100;
-    protected static final int   tileSize           = 16;
+    protected static final int   tileSize           = Tile.SIZE;
     protected static final int   mobSize            = 32;
     protected              float shootCooldown      = 0f;
     /** The health an enemy loses per hit, as in the Java2D ShooterMob: 10 hits kill. */
@@ -40,23 +41,7 @@ public class Mob extends Entity {
 
     protected boolean      walking;
     protected double       health;
-    protected TextureAtlas atlas;
 
-
-
-//    public Mob(String path) {
-//        walking          = false;
-//        dir              = Direction.DOWN;
-//
-//        atlas = new TextureAtlas(Gdx.files.internal(path));
-//
-//        mobUp    = new LibGDXAnimatedSprite(atlas, "King_Berno_Up", 0.2f, true);
-//        mobDown  = new LibGDXAnimatedSprite(atlas, "King_Berno_Down", 0.2f, true);
-//        mobLeft  = new LibGDXAnimatedSprite(atlas, "King_Berno_Left", 0.2f, true);
-//        mobRight = new LibGDXAnimatedSprite(atlas, "King_Berno_Right", 0.2f, true);
-//
-//        animSprite = mobDown;
-//    }
 
     /**
      * Gives every mob the player's collision box: a 16x8 px box at the feet,
@@ -103,7 +88,6 @@ public class Mob extends Entity {
      *               and {@code PREFIX_Right} regions.
      */
     protected void loadAnimations(TextureAtlas atlas, String prefix) {
-        this.atlas = atlas;
         mobUp      = new AnimatedSprite(atlas, prefix + "_Up", 0.2f, true);
         mobDown    = new AnimatedSprite(atlas, prefix + "_Down", 0.2f, true);
         mobLeft    = new AnimatedSprite(atlas, prefix + "_Left", 0.2f, true);
@@ -119,7 +103,7 @@ public class Mob extends Entity {
         if (ya > 0) direction = Direction.DOWN;
         else if (ya < 0) direction = Direction.UP;
 
-        // Move x
+        // Move one pixel at a time so the mob stops flush against a wall.
         for (int xStep = 0; xStep < Math.abs(xa); xStep++) {
             double stepX = xa > 0 ? 1 : -1;
             if (!collision(x + stepX, y)) {
@@ -129,7 +113,6 @@ public class Mob extends Entity {
             }
         }
 
-        // Move y
         for (int yStep = 0; yStep < Math.abs(ya); yStep++) {
             double stepY = ya > 0 ? 1 : -1;
             if (!collision(x, y + stepY)) {
@@ -139,7 +122,6 @@ public class Mob extends Entity {
             }
         }
 
-        // Clamp to map bounds
         int mapPixelWidth  = level.getWidth() * tileSize;
         int mapPixelHeight = level.getHeight() * tileSize;
 
@@ -158,10 +140,6 @@ public class Mob extends Entity {
         }
     }
 
-
-    private int abs(double value) {
-        return value < 0 ? -1 : 1;
-    }
 
     /**
      * Fires a spell from this mob's body center.
@@ -225,24 +203,18 @@ public class Mob extends Entity {
         shootCooldown = Projectile.SHOT_DELAY;
     }
 
-    /**
-     * Base update function that should be called by all extending mobs.
-     */
+    /** Counts down the shot cooldown and advances the animation. Subclasses override it. */
     public void update(float delta) {
-
         if (shootCooldown > 0f) {
             shootCooldown -= Gdx.graphics.getDeltaTime();
         }
         updateAnimation(delta, walking, direction);
     }
 
-    /**
-     * Updates the current animation frame based on movement direction and walking state.
-     */
+    /** Picks the animation for the direction, and plays it only while walking. */
     protected void updateAnimation(float delta, boolean isWalking, Direction direction) {
         if (mobUp == null || mobDown == null || mobLeft == null || mobRight == null) return;
 
-        // Change animation direction
         switch (direction) {
             case UP -> animSprite = mobUp;
             case DOWN -> animSprite = mobDown;
