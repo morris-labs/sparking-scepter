@@ -1,0 +1,63 @@
+# Reign
+
+Reign is a top-down 2D action game written in Java on [libGDX](https://libgdx.com/)
+1.13.1. You play a king who fights waves of enemies with fireballs. It ports an
+earlier Java2D version of the game to libGDX, and it includes a map editor that
+paints level PNG files.
+
+## Requirements
+
+- JDK 17 or later to run Gradle. The build compiles for Java 23; if your
+  machine doesn't have JDK 23, Gradle downloads it.
+- A desktop with OpenGL support.
+
+## Run the game
+
+To build and start the game, run the following from the repository root:
+
+```bash
+./gradlew lwjgl3:run
+
+```
+
+To start the map editor:
+
+```bash
+./gradlew lwjgl3:runEditor
+
+```
+
+## Controls
+
+- **Move**: W, A, S, D, or the arrow keys.
+- **Fire**: hold the left mouse button; spells fly toward the pointer.
+- **Add Mobs** and **Clear Mobs**: spawn a wave or remove every enemy. A new
+  wave spawns when every enemy is dead, unless you clicked **Clear Mobs**.
+
+## Levels
+
+Each pixel in a level PNG file is one 16x16 tile. The following colors map to
+tile types:
+
+| Color (ARGB) | Tile | Blocks movement |
+|---|---|---|
+| `0xFF125B0A` | Grass | No |
+| `0xFF434343` | Floor | No |
+| `0xFFC4DBFF` | Water | No |
+| `0xFF004B00` | Hedge | Yes |
+| `0xFF665C09` | Wall | Yes |
+| `0xFF6C3279` | Alternate wall | Yes |
+| `0xFF280A2B` | Void | Yes |
+
+Any other color becomes void. The game loads `assets/levels/TestMap.png`; to
+load another level, change `mapPath` in the `Game` class.
+
+## Project layout
+
+- `core/`: the game and the map editor.
+- `lwjgl3/`: the desktop launchers.
+- `assets/`: atlases, levels, sprites, and UI skins. Both run tasks use this
+  folder as the working directory.
+
+For more information about the code, the build, and the roadmap, see
+`CLAUDE.md`, `INFRA.md`, and `PLAN.md`.

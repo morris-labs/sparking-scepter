@@ -165,3 +165,6 @@ Thumbs.db
 
 # AI Orchestrator session notes
 .aio/
+
+# Exported review findings
+findings-*.json
