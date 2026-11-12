@@ -13,8 +13,6 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.southcentralpositronics.reign_gdx.entity.mob.PlayerMob;
-import com.southcentralpositronics.reign_gdx.events.Event;
-import com.southcentralpositronics.reign_gdx.events.EventListener;
 import com.southcentralpositronics.reign_gdx.input.Keyboard;
 import com.southcentralpositronics.reign_gdx.input.Mouse;
 import com.southcentralpositronics.reign_gdx.level.Level;
@@ -30,7 +28,6 @@ public class Game extends ApplicationAdapter {
     public static final String        TITLE           = "Reign";
     public static       int[]         screenCenter    = new int[2];
     public static       float         updateInt;
-    private             EventListener eventListener;
     protected           ShapeRenderer shapeRenderer;
     protected           String        mapPath;
 
@@ -60,12 +57,7 @@ public class Game extends ApplicationAdapter {
         batch           = new SpriteBatch();
         mobAtlas        = new TextureAtlas(Gdx.files.internal(mobAtlasPath));
         keyboard        = new Keyboard();
-        mouse           = new Mouse(new EventListener() {
-            @Override
-            public void onEvent(Event event) {
-
-            }
-        });
+        mouse           = new Mouse();
         // The world is always VIEWPORT_HEIGHT pixels tall; its width follows the
         // game area's aspect ratio, so the side panel doesn't squash the view.
         viewport = new ExtendViewport(VIEWPORT_HEIGHT, VIEWPORT_HEIGHT, camera);

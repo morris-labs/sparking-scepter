@@ -4,15 +4,9 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.southcentralpositronics.reign_gdx.events.EventListener;
 
 public class Mouse extends InputAdapter {
-    private final EventListener listener;
     private boolean leftPressed;
-
-    public Mouse(EventListener listener) {
-        this.listener = listener;
-    }
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
