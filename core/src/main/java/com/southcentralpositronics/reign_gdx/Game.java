@@ -27,6 +27,8 @@ public class Game extends ApplicationAdapter {
     public static final int           VIEWPORT_WIDTH  = WIDTH / SCALE;
     public static final int           VIEWPORT_HEIGHT = HEIGHT / SCALE;
     public static final String        TITLE           = "Reign";
+    /** Draws a red outline around the player's collision box. For debugging. */
+    private static final boolean      DRAW_HITBOX     = false;
     protected           ShapeRenderer shapeRenderer;
     protected           String        mapPath;
 
@@ -52,7 +54,6 @@ public class Game extends ApplicationAdapter {
         shapeRenderer = new ShapeRenderer();
 
         batch           = new SpriteBatch();
-        mobAtlas        = new TextureAtlas(Gdx.files.internal(mobAtlasPath));
         keyboard        = new Keyboard();
         mouse           = new Mouse();
         // The world is always VIEWPORT_HEIGHT pixels tall; its width follows the
@@ -116,13 +117,18 @@ public class Game extends ApplicationAdapter {
         shapeRenderer.setProjectionMatrix(camera.combined);
 
 
-        // Render game
         batch.begin();
         batch.enableBlending();
         level.render(batch);
         batch.end();
 
-        float thickness = 1.5f; // Set your desired border thickness
+        if (DRAW_HITBOX) drawPlayerHitbox();
+        hud.draw();
+    }
+
+    /** Outlines the player's collision box in red. */
+    private void drawPlayerHitbox() {
+        float thickness = 1.5f;
 
         float hitboxX      = (float) player.getX() + player.getPaddingLeft();
         float hitboxY      = (float) player.getY() + player.getPaddingBottom();
@@ -141,16 +147,15 @@ public class Game extends ApplicationAdapter {
         // Top border
         shapeRenderer.rect(hitboxX, hitboxY + hitboxHeight - thickness, hitboxWidth, thickness);
         shapeRenderer.end();
-
-        hud.draw();
     }
 
     @Override
     public void dispose() {
         batch.dispose();
         mobAtlas.dispose();
+        tileAtlas.dispose();
+        shapeRenderer.dispose();
         hud.dispose();
-        // Dispose of any other resources you manually load
     }
 
     public Level getLevel() {

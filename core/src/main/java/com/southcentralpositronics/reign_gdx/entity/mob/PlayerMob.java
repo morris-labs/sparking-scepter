@@ -6,14 +6,14 @@ import com.southcentralpositronics.reign_gdx.input.Keyboard;
 import com.southcentralpositronics.reign_gdx.input.Mouse;
 
 
+/** The player: moves with WASD or the arrow keys and fires spells at the mouse. */
 public class PlayerMob extends Mob {
     private Keyboard keyboard;
     private Mouse    mouse;
     private String   name;
 
     private final double  speed    = 2;
-    private       boolean shooting = false;
-    public        long    score    = 0;
+    private       long    score    = 0;
     /** The health the player loses per enemy hit, as in the Java2D version. */
     private static final double PLAYER_HIT_DAMAGE = 0.01;
     protected     int     height;
@@ -68,15 +68,8 @@ public class PlayerMob extends Mob {
         }
         updateAnimation(delta, isMoving, direction);
         if (mouse.isLeftPressed()) {
-            firePlayerSpell();  // your existing method
+            firePlayerSpell();
         }
-
-        clearProjectiles();
-    }
-
-
-    private void clearProjectiles() {
-        level.getProjectiles().removeIf(Projectile::isRemoved);
     }
 
     /**
