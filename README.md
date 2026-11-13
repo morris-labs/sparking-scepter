@@ -59,5 +59,7 @@ load another level, change `mapPath` in the `Game` class.
 - `assets/`: atlases, levels, sprites, and UI skins. Both run tasks use this
   folder as the working directory.
 
-For more information about the code, the build, and the roadmap, see
-`CLAUDE.md`, `INFRA.md`, and `PLAN.md`.
+## License
+
+Copyright (c) 2026 Isaac Morris. All rights reserved. See the `LICENSE`
+file.
