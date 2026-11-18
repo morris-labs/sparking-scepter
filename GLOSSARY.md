@@ -53,6 +53,23 @@ _Avoid_: debris, spark
 
 ## Play
 
+**Run**:
+One play of an arena, from the first wave until the player dies.
+_Avoid_: game, session, match
+
 **Wave**:
-A group of enemies that the arena releases against the player together.
+A group of enemies that the arena releases against the player together. The
+next wave starts only after the player clears the current one.
 _Avoid_: round, level
+
+**Break**:
+The pause between waves, after the player clears one and before the next
+starts.
+_Avoid_: intermission, rest
+
+**Score**:
+The points the player earns in one run.
+
+**High score**:
+The best score from any run, kept between runs.
+_Avoid_: record, best
