@@ -25,6 +25,14 @@ _Avoid_: map, stage
 A grid of tiles plus the entities in it. Every arena is a level.
 _Avoid_: world, map
 
+**Spawn point**:
+A place in an arena where enemies enter at the start of a wave.
+_Avoid_: spawner
+
+**Player start**:
+The place in an arena where the player appears when a run begins.
+_Avoid_: spawn (for the player)
+
 **Tile**:
 One 16x16 cell of a level. A tile is either solid or walkable.
 _Avoid_: block, cell
