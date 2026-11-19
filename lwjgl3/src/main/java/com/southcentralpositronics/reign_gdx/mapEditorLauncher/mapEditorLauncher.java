@@ -3,7 +3,7 @@ package com.southcentralpositronics.reign_gdx.mapEditorLauncher;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.southcentralpositronics.reign_gdx.lwjgl3.StartupHelper;
-import com.southcentralpositronics.reign_gdx.util.mapEditor.MapEditorApp;
+import com.southcentralpositronics.reign_gdx.game.editor.MapEditorApp;
 
 /** Launches the map editor on the desktop (LWJGL3). */
 public class mapEditorLauncher {

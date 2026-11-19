@@ -27,6 +27,19 @@ To start the map editor:
 
 ```
 
+## Run the tests
+
+From the repository root, run the JUnit 5 tests without a window:
+
+```bash
+./gradlew test
+
+```
+
+The level smoke test loads a PNG fixture without an application or OpenGL
+context. It checks tile types, collision flags, image orientation, and the
+fallback for an unknown color.
+
 ## Controls
 
 - **Move**: W, A, S, D, or the arrow keys.
@@ -54,7 +67,12 @@ load another level, change `mapPath` in the `Game` class.
 
 ## Project layout
 
-- `core/`: the game and the map editor.
+- `core/src/main/java/com/southcentralpositronics/reign_gdx/engine/`: terrain,
+  collision, pathfinding, entities, particles, input, rendering helpers, and
+  the file chooser widget. Engine packages have no dependency on game packages.
+- `core/src/main/java/com/southcentralpositronics/reign_gdx/game/`: Reign's
+  application, mobs, spells, level rules, HUD, minimap, and map editor.
+- `core/src/test/`: JUnit 5 tests and PNG fixtures.
 - `lwjgl3/`: the desktop launchers.
 - `assets/`: atlases, levels, sprites, and UI skins. Both run tasks use this
   folder as the working directory.
