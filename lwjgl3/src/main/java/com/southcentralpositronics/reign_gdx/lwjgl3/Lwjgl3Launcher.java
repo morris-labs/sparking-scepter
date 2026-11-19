@@ -2,7 +2,7 @@ package com.southcentralpositronics.reign_gdx.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.southcentralpositronics.reign_gdx.Game;
+import com.southcentralpositronics.reign_gdx.game.Game;
 
 /**
  * Launches the desktop (LWJGL3) application.
