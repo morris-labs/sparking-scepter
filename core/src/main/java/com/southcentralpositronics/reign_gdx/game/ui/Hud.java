@@ -22,9 +22,10 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.southcentralpositronics.reign_gdx.game.sim.Simulation;
 
 /**
- * The side panel ported from the Java2D Reign player UI: a minimap, the player's name, a
- * health bar, the score, buttons that add and clear enemies, and an exit
- * button. It fills a strip {@link #PANEL_WIDTH} pixels wide on the right of
+ * The side panel ported from the Java2D Reign player UI: a minimap, the
+ * player's name, a health bar, the score, the wave number, the enemies left,
+ * the countdown during a break, and an exit button. With the debug tools on,
+ * it also has buttons that add and clear enemies. It fills a strip {@link #PANEL_WIDTH} pixels wide on the right of
  * the window, and the game draws in the rest.
  */
 public class Hud implements Disposable {
@@ -35,6 +36,7 @@ public class Hud implements Disposable {
     private static final Color HEALTH_COLOR     = new Color(0x870000ff);
     private static final Color HEALTH_BG_COLOR  = Color.BLACK;
     private static final Color NAME_COLOR       = new Color(0xbbbbbbff);
+    private static final Color BREAK_COLOR      = new Color(0xffd75eff);
 
     private final Stage       stage;
     private final Skin        skin;
@@ -42,18 +44,25 @@ public class Hud implements Disposable {
     private final Simulation  simulation;
     private final ProgressBar healthBar;
     private final Label       scoreLabel;
+    private final Label       waveLabel;
+    private final Label       enemiesLabel;
+    private final Label       breakLabel;
     private final Cell<Actor> topSlot;
     private final Minimap     minimap;
-    private       long        shownScore = -1;
+    private       long        shownScore   = -1;
+    private       String      shownWave    = null;
+    private       int         shownEnemies = -1;
+    private       String      shownBreak   = null;
 
     /**
      * Builds the panel.
      *
-     * @param simulation The simulation whose player health and score the panel
-     *                   shows, and that the Add Mobs and Clear Mobs buttons act on.
+     * @param simulation The simulation whose player health, score, and waves the
+     *                   panel shows, and that the Add Mobs and Clear Mobs buttons act on.
      * @param playerName The name to show for the player.
+     * @param debug      Whether to show the Add Mobs and Clear Mobs buttons.
      */
-    public Hud(Simulation simulation, String playerName) {
+    public Hud(Simulation simulation, String playerName, boolean debug) {
         this.simulation = simulation;
         stage       = new Stage(new ScreenViewport());
         skin        = new Skin(Gdx.files.internal("ui/default/uiskin.json"));
@@ -84,13 +93,28 @@ public class Hud implements Disposable {
         scoreLabel.setFontScale(1.25f);
         panel.add(scoreLabel).padTop(4).row();
 
-        TextButton addMobs = new TextButton("Add Mobs", skin);
-        addMobs.addListener(changed(simulation::addEnemies));
-        panel.add(addMobs).width(140).height(40).padTop(12).row();
+        waveLabel = new Label("", skin);
+        waveLabel.setFontScale(1.25f);
+        panel.add(waveLabel).row();
 
-        TextButton clearMobs = new TextButton("Clear Mobs", skin);
-        clearMobs.addListener(changed(simulation::clearEnemies));
-        panel.add(clearMobs).width(140).height(40).row();
+        enemiesLabel = new Label("", skin);
+        enemiesLabel.setFontScale(1.25f);
+        panel.add(enemiesLabel).row();
+
+        breakLabel = new Label("", skin);
+        breakLabel.setFontScale(1.25f);
+        breakLabel.setColor(BREAK_COLOR);
+        panel.add(breakLabel).row();
+
+        if (debug) {
+            TextButton addMobs = new TextButton("Add Mobs", skin);
+            addMobs.addListener(changed(simulation::addEnemies));
+            panel.add(addMobs).width(140).height(40).padTop(12).row();
+
+            TextButton clearMobs = new TextButton("Clear Mobs", skin);
+            clearMobs.addListener(changed(simulation::clearEnemies));
+            panel.add(clearMobs).width(140).height(40).row();
+        }
 
         ImageButton exit = new ImageButton(new TextureRegionDrawable(exitTexture));
         exit.getImageCell().size(48);
@@ -143,8 +167,8 @@ public class Hud implements Disposable {
     }
 
     /**
-     * Updates the health bar and score from the simulation and runs the panel's
-     * actions.
+     * Updates the health bar, score, and wave labels from the simulation and
+     * runs the panel's actions.
      *
      * @param delta The time since the last frame, in seconds.
      */
@@ -154,7 +178,28 @@ public class Hud implements Disposable {
             shownScore = simulation.getScore();
             scoreLabel.setText("Score: " + shownScore);
         }
+        String wave = "Wave: " + Math.max(1, simulation.getWave());
+        if (!wave.equals(shownWave)) {
+            shownWave = wave;
+            waveLabel.setText(wave);
+        }
+        if (simulation.getEnemyCount() != shownEnemies) {
+            shownEnemies = simulation.getEnemyCount();
+            enemiesLabel.setText("Enemies left: " + shownEnemies);
+        }
+        String countdown = breakText();
+        if (!countdown.equals(shownBreak)) {
+            shownBreak = countdown;
+            breakLabel.setText(countdown);
+        }
         stage.act(delta);
+    }
+
+    /** Gets the countdown text: whole seconds to the next wave, rounded up, or nothing outside a break. */
+    private String breakText() {
+        if (!simulation.isBreak()) return "";
+        int seconds = (int) Math.ceil(simulation.getBreakSecondsLeft());
+        return "Wave " + (simulation.getWave() + 1) + " in " + seconds;
     }
 
     /** Draws the panel. Call it after the game, because it sets its own GL viewport. */

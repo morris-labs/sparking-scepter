@@ -38,6 +38,8 @@ def os = System.properties['os.name'].toLowerCase()
 
 run {
   workingDir = rootProject.file('assets').path
+  // ./gradlew lwjgl3:run -Pdebug turns on the debug tools: Add Mobs, Clear Mobs, and hitbox outlines.
+  if (project.hasProperty('debug')) systemProperty 'reign.debug', 'true'
 // You can uncomment the next line if your IDE claims a build failure even when the app closed properly.
   //setIgnoreExitValue(true)
 

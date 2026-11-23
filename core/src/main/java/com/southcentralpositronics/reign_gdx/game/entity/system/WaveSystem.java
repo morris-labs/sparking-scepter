@@ -8,53 +8,58 @@ import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionCom
 import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
+import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
+import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
 import com.southcentralpositronics.reign_gdx.game.entity.Families;
 import com.southcentralpositronics.reign_gdx.game.entity.MobFactory;
 import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
 import com.southcentralpositronics.reign_gdx.game.sim.EventLog;
+import com.southcentralpositronics.reign_gdx.game.sim.RunState;
 import com.southcentralpositronics.reign_gdx.game.sim.SimulationEvent;
+import com.southcentralpositronics.reign_gdx.game.wave.WavePlan;
 
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Starts a new wave of enemies whenever every enemy is dead, as the Java2D
- * {@code SpawnLevel} did. Enemies appear on random open tiles away from the
- * player. Clear Mobs, or a wave that finds no room, pauses new waves until the
- * next Add Mobs.
+ * Runs the survival loop of waves and breaks. A run opens with a break of
+ * {@link WavePlan#FIRST_BREAK_SECONDS}; when a break runs out, the next wave
+ * from the {@link WavePlan} enters at the arena's spawn points; when the last
+ * enemy of a wave dies, a break of {@link WavePlan#BREAK_SECONDS} starts.
+ *
+ * <p>Each enemy enters at a random spawn point at least
+ * {@link WavePlan#MIN_SPAWN_DISTANCE} from the player, or at the farthest spawn
+ * point if none is that far. In an arena with no spawn points, no wave starts:
+ * the break runs out and the run waits.
+ *
+ * <p>Clear Mobs pauses the loop: the break stops counting down and a wave with
+ * no enemies left doesn't end, until the next Add Mobs.
  */
 public final class WaveSystem extends EntitySystem {
-    /** The number of Shooters in each wave. */
-    private static final int    SHOOTER_COUNT      = 10;
-    /** The number of Chasers in each wave. */
-    private static final int    CHASER_COUNT       = 5;
-    /** The number of A* Chasers in each wave. */
-    private static final int    ASTAR_CHASER_COUNT = 5;
-    /** The closest that a spawned enemy can be to the player, in pixels. */
-    private static final double MIN_SPAWN_DISTANCE = 6 * 16;
-
     private final Level      level;
     private final MobFactory mobs;
     private final EventLog   events;
+    private final RunState   run;
 
     private ImmutableArray<Entity> enemies;
     private ImmutableArray<Entity> players;
-    /** True after Clear Mobs, or after a wave found no room, so an empty level doesn't try a wave every tick. */
-    private boolean                wavesPaused = false;
-    /** The number of waves that have started. */
-    private int                    wave        = 0;
+    /** True after Clear Mobs, until the next Add Mobs. */
+    private boolean                paused = false;
 
     /**
      * Creates the system.
      *
-     * @param level  The level whose open tiles and random source pick where enemies spawn.
+     * @param level  The level whose spawn points and random source pick where enemies enter.
      * @param mobs   The factory that adds enemies.
      * @param events The log that receives wave events.
+     * @param run    The run's state, which the system moves between waves and breaks.
      */
-    public WaveSystem(Level level, MobFactory mobs, EventLog events) {
+    public WaveSystem(Level level, MobFactory mobs, EventLog events, RunState run) {
         super(SystemPriority.WAVES);
         this.level  = level;
         this.mobs   = mobs;
         this.events = events;
+        this.run    = run;
     }
 
     @Override
@@ -63,82 +68,86 @@ public final class WaveSystem extends EntitySystem {
         players = engine.getEntitiesFor(Families.PLAYERS);
     }
 
+    /** Opens the run with the break before the first wave. */
+    public void startRun() {
+        run.startBreak(ticks(WavePlan.FIRST_BREAK_SECONDS));
+    }
+
     @Override
     public void update(float deltaTime) {
-        if (enemies.size() == 0 && !wavesPaused && players.size() > 0) startWave();
-    }
-
-    /**
-     * Starts the next wave: spawns a wave of enemies and raises
-     * {@link SimulationEvent.Type#WAVE_START}. If no enemy finds room, the wave
-     * doesn't count and new waves pause.
-     */
-    public void startWave() {
-        if (spawnEnemies() == 0) {
-            wavesPaused = true;
-            return;
+        if (paused || run.isOver() || players.size() == 0) return;
+        if (run.isWave()) {
+            if (enemies.size() == 0) run.startBreak(ticks(WavePlan.BREAK_SECONDS));
+        } else if (run.countDownBreak()) {
+            startWave();
         }
-        wave++;
-        PositionComponent player = players.size() > 0 ? PositionComponent.MAPPER.get(players.first()) : null;
-        events.raise(SimulationEvent.Type.WAVE_START, EntityKind.PLAYER, player != null ? player.x : 0,
-                     player != null ? player.y : 0);
     }
 
     /**
-     * Spawns one wave's enemies, as the Java2D {@code Level.generateMobs()}
-     * did, and resumes new waves. This is the Add Mobs button.
-     *
-     * @return The number of enemies spawned.
+     * Starts the next wave: spawns its enemies and raises
+     * {@link SimulationEvent.Type#WAVE_START}. With no spawn points, it does
+     * nothing.
      */
-    public int spawnEnemies() {
-        wavesPaused = false;
-        return spawn(EntityKind.SHOOTER, SHOOTER_COUNT)
-            + spawn(EntityKind.CHASER, CHASER_COUNT)
-            + spawn(EntityKind.ASTAR_CHASER, ASTAR_CHASER_COUNT);
+    private void startWave() {
+        if (level.getSpawnPoints().isEmpty()) return;
+        run.startWave();
+        spawn(WavePlan.enemies(run.getWave()));
+        PositionComponent player = PositionComponent.MAPPER.get(players.first());
+        events.raise(SimulationEvent.Type.WAVE_START, EntityKind.PLAYER, player.x, player.y);
     }
 
-    /** Removes every enemy, with no particles or events, and pauses new waves. This is the Clear Mobs button. */
+    /**
+     * Spawns the enemies of the current wave, or of wave 1 before the first
+     * wave, without starting a wave, and resumes the loop. This is the Add Mobs
+     * button.
+     */
+    public void addEnemies() {
+        paused = false;
+        spawn(WavePlan.enemies(run.getWave()));
+    }
+
+    /** Removes every enemy, with no particles, score, or events, and pauses the loop. This is the Clear Mobs button. */
     public void clearEnemies() {
-        wavesPaused = true;
+        paused = true;
         Engine engine = getEngine();
         for (Entity enemy : enemies.toArray(Entity.class)) engine.removeEntity(enemy);
     }
 
-    /** Gets the number of waves that have started. */
-    public int getWave() {
-        return wave;
+    /** Adds each enemy at a spawn point that {@link #pickSpawnPoint()} chooses. */
+    private void spawn(List<EntityKind> kinds) {
+        if (level.getSpawnPoints().isEmpty()) return;
+        for (EntityKind kind : kinds) {
+            Vector2i point = pickSpawnPoint();
+            mobs.createEnemy(kind, point.x, point.y);
+        }
     }
 
     /**
-     * Spawns enemies of one kind on random open tiles at least
-     * {@link #MIN_SPAWN_DISTANCE} from the player's tile. The method gives up on
-     * an enemy after {@code width * height} tries, so a small arena spawns
-     * fewer than asked.
-     *
-     * @return The number of enemies spawned.
+     * Picks a random spawn point at least {@link WavePlan#MIN_SPAWN_DISTANCE}
+     * from the player, or the farthest one if none is. Distance runs from the
+     * player's position to where an enemy on the spawn point would stand.
      */
-    private int spawn(EntityKind kind, int count) {
-        PositionComponent player  = players.size() > 0 ? PositionComponent.MAPPER.get(players.first()) : null;
-        int               playerX = player != null ? (int) Math.floor(player.x / Tile.SIZE) : 0;
-        int               playerY = player != null ? (int) Math.floor(player.y / Tile.SIZE) : 0;
-        int               width   = level.getWidth();
-        int               height  = level.getHeight();
-        Random            random  = level.getRandom();
-        int               spawned = 0;
+    private Vector2i pickSpawnPoint() {
+        List<Vector2i>    points   = level.getSpawnPoints();
+        PositionComponent player   = players.size() > 0 ? PositionComponent.MAPPER.get(players.first()) : null;
+        if (player == null) return points.get(level.getRandom().nextInt(points.size()));
 
-        for (int i = 0; i < count; i++) {
-            for (int tries = 0; tries < width * height; tries++) {
-                int tx = random.nextInt(width);
-                int ty = random.nextInt(height);
-                if (!level.isWalkable(tx, ty)) continue;
-                if (player != null && Math.hypot(playerX - tx, playerY - ty) * Tile.SIZE < MIN_SPAWN_DISTANCE) {
-                    continue;
-                }
-                mobs.createEnemy(kind, tx, ty);
-                spawned++;
-                break;
+        List<Vector2i> farEnough = new ArrayList<>();
+        Vector2i       farthest  = points.getFirst();
+        double         farthestDistance = -1;
+        for (Vector2i point : points) {
+            double distance = Math.hypot(point.x * Tile.SIZE + Tile.SIZE / 2.0 - player.x,
+                                         point.y * Tile.SIZE + MobFactory.BODY_HEIGHT / 2.0 - player.y);
+            if (distance >= WavePlan.MIN_SPAWN_DISTANCE) farEnough.add(point);
+            if (distance > farthestDistance) {
+                farthest         = point;
+                farthestDistance = distance;
             }
         }
-        return spawned;
+        return farEnough.isEmpty() ? farthest : farEnough.get(level.getRandom().nextInt(farEnough.size()));
+    }
+
+    private static int ticks(float seconds) {
+        return Math.round(seconds * FixedTimestep.TICKS_PER_SECOND);
     }
 }

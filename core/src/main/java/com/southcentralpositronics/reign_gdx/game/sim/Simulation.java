@@ -64,6 +64,7 @@ public final class Simulation {
 
     private final Engine                 engine = new Engine();
     private final EventLog               events = new EventLog();
+    private final RunState               run    = new RunState();
     private final Level                  level;
     private final WaveSystem             waves;
     private final MobFactory             mobs;
@@ -74,7 +75,8 @@ public final class Simulation {
     private       long                   ticks  = 0;
 
     /**
-     * Creates a simulation and starts the first wave.
+     * Creates a simulation and opens the run with the break before the first
+     * wave.
      *
      * @param arena The arena to play. The player appears at its player start,
      *              or on a random open tile if it has none.
@@ -83,7 +85,7 @@ public final class Simulation {
     public Simulation(Arena arena, long seed) {
         level = new Level(arena, seed, engine);
         mobs  = new MobFactory(engine, level.getRandom());
-        waves = new WaveSystem(level, mobs, events);
+        waves = new WaveSystem(level, mobs, events, run);
 
         engine.addSystem(new PlayerInputSystem());
         engine.addSystem(new ChaseAiSystem());
@@ -106,7 +108,7 @@ public final class Simulation {
 
         Vector2i start = arena.getPlayerStart().orElseGet(level::getRandomNonSolidTile);
         player = mobs.createPlayer(start.x, start.y);
-        waves.startWave();
+        waves.startRun();
     }
 
     /**
@@ -170,19 +172,19 @@ public final class Simulation {
         return enemies.size();
     }
 
-    /** Gets the number of waves that have started. */
+    /** Gets the number of waves that have started: 0 during the break before the first wave. */
     public int getWave() {
-        return waves.getWave();
+        return run.getWave();
     }
 
-    /** Checks whether a break between waves is running. Breaks don't exist yet, so this is always false. */
+    /** Checks whether a break between waves is running, including the one before the first wave. */
     public boolean isBreak() {
-        return false;
+        return run.isBreak();
     }
 
     /** Gets the seconds left in the break, or 0 when no break is running. */
     public float getBreakSecondsLeft() {
-        return 0f;
+        return run.getBreakTicksLeft() * FixedTimestep.TICK_SECONDS;
     }
 
     /** Gets the score: {@link #POINTS_PER_KILL} for each enemy the player has killed. */
@@ -190,9 +192,9 @@ public final class Simulation {
         return PlayerComponent.MAPPER.get(player).kills * POINTS_PER_KILL;
     }
 
-    /** Checks whether the run is over. The player can't die yet, so this is always false. */
+    /** Checks whether the run is over. The player can't die yet, so nothing ends a run. */
     public boolean isRunOver() {
-        return false;
+        return run.isOver();
     }
 
     /**
@@ -234,12 +236,21 @@ public final class Simulation {
         mobs.createEnemy(kind, tx, ty);
     }
 
-    /** Spawns another wave's worth of enemies without starting a new wave. This is the Add Mobs button. */
+    /**
+     * Spawns the current wave's enemies again, at spawn points, without
+     * starting a new wave, and resumes the waves and breaks that
+     * {@link #clearEnemies()} paused. Before the first wave, it spawns wave 1's
+     * enemies. This is the Add Mobs button.
+     */
     public void addEnemies() {
-        waves.spawnEnemies();
+        waves.addEnemies();
     }
 
-    /** Removes every enemy and pauses automatic waves until {@link #addEnemies()}. This is the Clear Mobs button. */
+    /**
+     * Removes every enemy, with no score, and pauses waves and breaks until
+     * {@link #addEnemies()}: the break stops counting down, and an empty wave
+     * doesn't end. This is the Clear Mobs button.
+     */
     public void clearEnemies() {
         waves.clearEnemies();
     }

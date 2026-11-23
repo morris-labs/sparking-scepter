@@ -45,8 +45,38 @@ to close the game.
   or click **Main menu** to abandon the run.
 - **Move**: W, A, S, D, or the arrow keys.
 - **Fire**: hold the left mouse button; spells fly toward the pointer.
-- **Add Mobs** and **Clear Mobs**: spawn a wave or remove every enemy. A new
-  wave spawns when every enemy is dead, unless you clicked **Clear Mobs**.
+
+## Waves
+
+A run opens with a 3-second break, then wave 1 enters at the arena's spawn
+points. Each enemy enters at a spawn point at least 6 tiles from you, or at the
+farthest one if none is that far. When you defeat the last enemy of a wave, a
+5-second break starts, and the next wave enters when it ends. Each wave is
+bigger than the last, and later waves bring more A* Chasers and Shooters. The
+side panel shows the wave number, the enemies left, and the countdown during a
+break.
+
+To tune the waves, edit the table in the `WavePlan` class
+(`core/src/main/java/com/southcentralpositronics/reign_gdx/game/wave/WavePlan.java`).
+
+## Debug tools
+
+The debug tools are off by default. To turn them on, start the game with the
+`debug` Gradle property:
+
+```bash
+./gradlew lwjgl3:run -Pdebug
+
+```
+
+To turn them on for the JAR, pass `-Dreign.debug=true` to `java`. With the
+debug tools on, the side panel has two more buttons, and each mob's collision
+box has a red outline:
+
+- **Add Mobs**: spawns the current wave's enemies again, without starting a
+  new wave, and resumes waves after **Clear Mobs**.
+- **Clear Mobs**: removes every enemy and holds the run: a break stops
+  counting down, and an emptied wave doesn't end, until **Add Mobs**.
 
 ## Arenas
 

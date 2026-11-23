@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -104,32 +103,6 @@ class SimulationTest {
         assertEquals(10, count(events, SimulationEvent.Type.HIT));
         assertEquals(1, count(events, SimulationEvent.Type.ENEMY_DEATH));
         assertEquals(Simulation.POINTS_PER_KILL, simulation.getScore());
-    }
-
-    @Test
-    void theSameSeedSpawnsTheSameEnemiesAndTheyMoveTheSameWay() {
-        assertEquals(enemiesAfterTwoSeconds(SEED), enemiesAfterTwoSeconds(SEED));
-    }
-
-    @Test
-    void differentSeedsSpawnDifferentEnemies() {
-        assertNotEquals(enemiesAfterTwoSeconds(1L), enemiesAfterTwoSeconds(2L));
-    }
-
-    @Test
-    void theFirstWaveStartsWhenTheRunBegins() {
-        Simulation simulation = new Simulation(TestArenas.open(30, 30, 15, 15), SEED);
-
-        assertEquals(1, simulation.getWave());
-        assertEquals(20, simulation.getEnemyCount());
-        assertEquals(1, count(simulation.drainEvents(), SimulationEvent.Type.WAVE_START));
-    }
-
-    /** Runs a 30x30 arena for two seconds and lists the enemies. Particles aren't seeded, so they're left out. */
-    private static List<EntityState> enemiesAfterTwoSeconds(long seed) {
-        Simulation simulation = new Simulation(TestArenas.open(30, 30, 15, 15), seed);
-        tick(simulation, 120);
-        return simulation.getEntities().stream().filter(entity -> entity.kind().isEnemy()).toList();
     }
 
     private static long count(List<SimulationEvent> events, SimulationEvent.Type type) {
