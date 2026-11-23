@@ -86,6 +86,11 @@ The pause between waves, after the player clears one and before the next
 starts.
 _Avoid_: intermission, rest
 
+**Upgrade**:
+A lasting boost to the player, such as faster casting, that the player
+chooses from three offers during a break. It lasts until the run ends.
+_Avoid_: power-up, perk, buff
+
 **Score**:
 The points the player earns in one run.
 

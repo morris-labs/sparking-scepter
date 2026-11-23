@@ -16,6 +16,7 @@ import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
 import com.southcentralpositronics.reign_gdx.game.sim.EventLog;
 import com.southcentralpositronics.reign_gdx.game.sim.RunState;
 import com.southcentralpositronics.reign_gdx.game.sim.SimulationEvent;
+import com.southcentralpositronics.reign_gdx.game.upgrade.UpgradeChoice;
 import com.southcentralpositronics.reign_gdx.game.wave.WavePlan;
 
 import java.util.ArrayList;
@@ -26,6 +27,9 @@ import java.util.List;
  * {@link WavePlan#FIRST_BREAK_SECONDS}; when a break runs out, the next wave
  * from the {@link WavePlan} enters at the arena's spawn points; when the last
  * enemy of a wave dies, a break of {@link WavePlan#BREAK_SECONDS} starts.
+ *
+ * <p>Each break after a cleared wave offers upgrades, and its countdown waits
+ * until the player chooses one. The break before the first wave offers none.
  *
  * <p>Each enemy enters at a random spawn point at least
  * {@link WavePlan#MIN_SPAWN_DISTANCE} from the player, or at the farthest spawn
@@ -39,7 +43,8 @@ public final class WaveSystem extends EntitySystem {
     private final Level      level;
     private final MobFactory mobs;
     private final EventLog   events;
-    private final RunState   run;
+    private final RunState      run;
+    private final UpgradeChoice upgrades;
 
     private ImmutableArray<Entity> enemies;
     private ImmutableArray<Entity> players;
@@ -52,14 +57,16 @@ public final class WaveSystem extends EntitySystem {
      * @param level  The level whose spawn points and random source pick where enemies enter.
      * @param mobs   The factory that adds enemies.
      * @param events The log that receives wave events.
-     * @param run    The run's state, which the system moves between waves and breaks.
+     * @param run      The run's state, which the system moves between waves and breaks.
+     * @param upgrades The run's upgrades, offered at the start of each break after a cleared wave.
      */
-    public WaveSystem(Level level, MobFactory mobs, EventLog events, RunState run) {
+    public WaveSystem(Level level, MobFactory mobs, EventLog events, RunState run, UpgradeChoice upgrades) {
         super(SystemPriority.WAVES);
         this.level  = level;
         this.mobs   = mobs;
         this.events = events;
         this.run    = run;
+        this.upgrades = upgrades;
     }
 
     @Override
@@ -77,8 +84,11 @@ public final class WaveSystem extends EntitySystem {
     public void update(float deltaTime) {
         if (paused || run.isOver() || players.size() == 0) return;
         if (run.isWave()) {
-            if (enemies.size() == 0) run.startBreak(ticks(WavePlan.BREAK_SECONDS));
-        } else if (run.countDownBreak()) {
+            if (enemies.size() == 0) {
+                run.startBreak(ticks(WavePlan.BREAK_SECONDS));
+                upgrades.offer();
+            }
+        } else if (!upgrades.isPending() && run.countDownBreak()) {
             startWave();
         }
     }

@@ -35,6 +35,8 @@ import com.southcentralpositronics.reign_gdx.game.entity.system.ShooterAiSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.SpellSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.WanderAiSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.WaveSystem;
+import com.southcentralpositronics.reign_gdx.game.upgrade.Upgrade;
+import com.southcentralpositronics.reign_gdx.game.upgrade.UpgradeChoice;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +68,7 @@ public final class Simulation {
     private final RunState               run    = new RunState();
     private final Level                  level;
     private final WaveSystem             waves;
+    private final UpgradeChoice          upgrades;
     private final MobFactory             mobs;
     private final ImmutableArray<Entity> particles;
     private final ImmutableArray<Entity> spells;
@@ -84,7 +87,8 @@ public final class Simulation {
     public Simulation(Arena arena, long seed) {
         level = new Level(arena, seed, engine);
         mobs  = new MobFactory(engine, level.getRandom());
-        waves = new WaveSystem(level, mobs, events, run);
+        upgrades = new UpgradeChoice(level.getRandom());
+        waves    = new WaveSystem(level, mobs, events, run, upgrades);
 
         engine.addSystem(new PlayerInputSystem());
         engine.addSystem(new ChaseAiSystem());
@@ -136,6 +140,11 @@ public final class Simulation {
     /** Gets a snapshot of the player. */
     public EntityState getPlayer() {
         return mobState(player);
+    }
+
+    /** Gets the most health the player can have: 1 at the start of a run, more with upgrades. */
+    public double getPlayerMaxHealth() {
+        return HealthComponent.MAPPER.get(player).max;
     }
 
     /**
@@ -204,6 +213,40 @@ public final class Simulation {
      */
     public boolean isRunOver() {
         return run.isOver();
+    }
+
+    /**
+     * Checks whether a break is waiting for the player to choose an upgrade.
+     * Each break after a cleared wave waits, with its countdown held, until
+     * {@link #chooseUpgrade(Upgrade)}.
+     */
+    public boolean isUpgradePending() {
+        return upgrades.isPending();
+    }
+
+    /**
+     * Gets the upgrades on offer: {@link Upgrade#OFFER_COUNT} different
+     * upgrades drawn with the run's seed, or an empty list when no choice is
+     * waiting.
+     */
+    public List<Upgrade> getUpgradeOffers() {
+        return upgrades.getOffers();
+    }
+
+    /**
+     * Takes one of the offered upgrades: it changes the player at once, and
+     * the break's countdown resumes.
+     *
+     * @param upgrade The upgrade to take; it must be one of {@link #getUpgradeOffers()}.
+     * @throws IllegalArgumentException If the upgrade isn't on offer.
+     */
+    public void chooseUpgrade(Upgrade upgrade) {
+        upgrades.choose(upgrade, player);
+    }
+
+    /** Gets the upgrades taken this run, in the order they were taken. A new run has none. */
+    public List<Upgrade> getUpgradesTaken() {
+        return upgrades.getTaken();
     }
 
     /**
