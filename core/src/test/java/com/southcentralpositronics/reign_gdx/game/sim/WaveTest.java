@@ -1,5 +1,6 @@
 package com.southcentralpositronics.reign_gdx.game.sim;
 
+import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
 import com.southcentralpositronics.reign_gdx.engine.level.Arena;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +34,42 @@ class WaveTest {
         assertFalse(simulation.isBreak());
         assertEquals(1, simulation.getWave());
         assertEquals(0f, simulation.getBreakSecondsLeft());
+        assertTrue(simulation.getEnemyCount() > 0);
+        assertEquals(1, count(events, SimulationEvent.Type.WAVE_START));
+    }
+
+    @Test
+    void waveEndsWhenItsLastEnemyDiesAndAFiveSecondBreakLeadsToTheNextWave() {
+        Simulation simulation = new Simulation(corridor(), SEED);
+        tick(simulation, 180, new ArrayList<>());
+        assertEquals(1, simulation.getWave());
+
+        // Fire down the corridor at the nearest enemy until the wave is gone.
+        int ticks = 0;
+        while (simulation.getEnemyCount() > 0 && ticks < 3600) {
+            assertFalse(simulation.isBreak(), "the break started while enemies were left");
+            EntityState target = nearestEnemy(simulation);
+            simulation.setInput(PlayerInput.castAt((float) target.x(), (float) target.y() + 8));
+            simulation.tick();
+            ticks++;
+        }
+        simulation.setInput(PlayerInput.NONE);
+        simulation.drainEvents();
+
+        assertEquals(0, simulation.getEnemyCount(), "the player never cleared wave 1");
+        assertTrue(simulation.isBreak());
+        assertEquals(5f, simulation.getBreakSecondsLeft(), 1e-6);
+        assertEquals(1, simulation.getWave());
+
+        List<SimulationEvent> events = new ArrayList<>();
+        tick(simulation, 299, events);
+        assertTrue(simulation.isBreak());
+        assertEquals(1, simulation.getWave());
+        assertEquals(0, simulation.getEnemyCount());
+
+        tick(simulation, 1, events);
+        assertFalse(simulation.isBreak());
+        assertEquals(2, simulation.getWave());
         assertTrue(simulation.getEnemyCount() > 0);
         assertEquals(1, count(events, SimulationEvent.Type.WAVE_START));
     }
@@ -76,6 +113,13 @@ class WaveTest {
             "##########",
             "#P......S#",
             "##########");
+    }
+
+    private static EntityState nearestEnemy(Simulation simulation) {
+        EntityState player = simulation.getPlayer();
+        return simulation.getEntities().stream().filter(entity -> entity.kind().isEnemy())
+            .min(java.util.Comparator.comparingDouble(enemy -> Math.hypot(enemy.x() - player.x(), enemy.y() - player.y())))
+            .orElseThrow();
     }
 
     static long count(List<SimulationEvent> events, SimulationEvent.Type type) {
