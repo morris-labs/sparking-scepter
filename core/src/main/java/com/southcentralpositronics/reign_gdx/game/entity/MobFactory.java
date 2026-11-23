@@ -1,5 +1,6 @@
 package com.southcentralpositronics.reign_gdx.game.entity;
 
+import com.badlogic.ashley.core.Component;
 import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
@@ -122,53 +123,50 @@ public final class MobFactory {
 
     /** Adds a Dummy: an enemy that wanders and never attacks. */
     public Entity createDummy(int tx, int ty) {
-        Entity dummy = createEnemyBase(EntityKind.DUMMY, tx, ty, DUMMY_SCORE);
-        dummy.add(wander(0.5f, 1f));
-        engine.addEntity(dummy);
-        return dummy;
+        return addEnemy(EntityKind.DUMMY, tx, ty, DUMMY_SCORE, wander(0.5f, 1f));
     }
 
     /** Adds a Chaser: an enemy that walks straight at the player, ignoring walls, and hurts it by touch. */
     public Entity createChaser(int tx, int ty) {
-        Entity           chaser = createEnemyBase(EntityKind.CHASER, tx, ty, CHASER_SCORE);
-        ChaseAiComponent chase  = engine.createComponent(ChaseAiComponent.class);
+        ChaseAiComponent chase = engine.createComponent(ChaseAiComponent.class);
         chase.speed = CHASER_SPEED;
         chase.range = CHASE_RANGE;
-        chaser.add(chase);
-        chaser.add(contactDamage());
-        engine.addEntity(chaser);
-        return chaser;
+        return addEnemy(EntityKind.CHASER, tx, ty, CHASER_SCORE, chase, contactDamage());
     }
 
     /** Adds an A* Chaser: an enemy that follows an A* path to the player, around walls, and hurts it by touch. */
     public Entity createAStarChaser(int tx, int ty) {
-        Entity           chaser = createEnemyBase(EntityKind.ASTAR_CHASER, tx, ty, ASTAR_CHASER_SCORE);
-        AStarAiComponent ai     = engine.createComponent(AStarAiComponent.class);
+        AStarAiComponent ai = engine.createComponent(AStarAiComponent.class);
         ai.speed          = CHASER_SPEED;
         ai.refreshSeconds = PATH_REFRESH_SECONDS;
-        chaser.add(ai);
-        chaser.add(contactDamage());
-        engine.addEntity(chaser);
-        return chaser;
+        return addEnemy(EntityKind.ASTAR_CHASER, tx, ty, ASTAR_CHASER_SCORE, ai, contactDamage());
     }
 
     /** Adds a Shooter: an enemy that wanders and casts at the player in range. */
     public Entity createShooter(int tx, int ty) {
-        Entity             shooter = createEnemyBase(EntityKind.SHOOTER, tx, ty, SHOOTER_SCORE);
-        ShooterAiComponent ai      = engine.createComponent(ShooterAiComponent.class);
+        ShooterAiComponent ai = engine.createComponent(ShooterAiComponent.class);
         ai.range = SHOOTER_RANGE;
-        shooter.add(wander(0.5f, 1.5f));
-        shooter.add(ai);
-        shooter.add(caster(ENEMY_SPELL_DAMAGE));
-        engine.addEntity(shooter);
-        return shooter;
+        return addEnemy(EntityKind.SHOOTER, tx, ty, SHOOTER_SCORE, wander(0.5f, 1.5f), ai, caster(ENEMY_SPELL_DAMAGE));
     }
 
-    private Entity createEnemyBase(EntityKind kind, int tx, int ty, long score) {
+    /**
+     * Builds an enemy from the components every mob has, an enemy marker, and
+     * the given components, and adds it to the engine.
+     *
+     * @param kind  The kind of enemy.
+     * @param tx    The tile column.
+     * @param ty    The tile row.
+     * @param score The points the enemy is worth.
+     * @param parts The components that make this kind of enemy.
+     * @return The enemy entity.
+     */
+    private Entity addEnemy(EntityKind kind, int tx, int ty, long score, Component... parts) {
         Entity         enemy  = createMob(kind, tx, ty);
         EnemyComponent marker = engine.createComponent(EnemyComponent.class);
         marker.score = score;
         enemy.add(marker);
+        for (Component part : parts) enemy.add(part);
+        engine.addEntity(enemy);
         return enemy;
     }
 
