@@ -49,6 +49,10 @@ public class Hud implements Disposable {
     private static final Color NAME_COLOR       = new Color(0xbbbbbbff);
     private static final Color BREAK_COLOR      = new Color(0xffd75eff);
     private static final Color CHOICE_BG_COLOR  = new Color(0x000000cc);
+    /** The font scale of the player's name and the upgrade box title. */
+    private static final float NAME_SCALE       = 1.5f;
+    /** The font scale of the panel's other labels. */
+    private static final float LABEL_SCALE      = 1.25f;
 
     private final Stage       stage;
     private final Skin        skin;
@@ -94,34 +98,21 @@ public class Hud implements Disposable {
         topSlot = panel.add((Actor) null).center().padBottom(12);
         panel.row();
 
-        Label name = new Label(playerName, skin);
-        name.setColor(NAME_COLOR);
-        name.setFontScale(1.5f);
-        panel.add(name).row();
+        addLabel(panel, playerName, NAME_SCALE).setColor(NAME_COLOR);
 
         healthBar = new ProgressBar(0f, 1f, 0.001f, false, healthBarStyle());
         healthBar.setAnimateDuration(0f);
         Label hpLabel = new Label(" HP", skin);
-        hpLabel.setFontScale(1.25f);
+        hpLabel.setFontScale(LABEL_SCALE);
         Stack health = new Stack(healthBar, hpLabel);
         panel.add(health).growX().height(24).row();
 
-        scoreLabel = new Label("", skin);
-        scoreLabel.setFontScale(1.25f);
-        panel.add(scoreLabel).padTop(4).row();
-
-        waveLabel = new Label("", skin);
-        waveLabel.setFontScale(1.25f);
-        panel.add(waveLabel).row();
-
-        enemiesLabel = new Label("", skin);
-        enemiesLabel.setFontScale(1.25f);
-        panel.add(enemiesLabel).row();
-
-        breakLabel = new Label("", skin);
-        breakLabel.setFontScale(1.25f);
+        scoreLabel = addLabel(panel, "", LABEL_SCALE);
+        panel.getCell(scoreLabel).padTop(4);
+        waveLabel    = addLabel(panel, "", LABEL_SCALE);
+        enemiesLabel = addLabel(panel, "", LABEL_SCALE);
+        breakLabel   = addLabel(panel, "", LABEL_SCALE);
         breakLabel.setColor(BREAK_COLOR);
-        panel.add(breakLabel).row();
 
         upgradesLabel = new Label("", skin);
         upgradesLabel.setWrap(true);
@@ -171,13 +162,13 @@ public class Hud implements Disposable {
 
         Label title = new Label("Choose an upgrade", skin);
         title.setColor(BREAK_COLOR);
-        title.setFontScale(1.5f);
+        title.setFontScale(NAME_SCALE);
         box.add(title).center().padBottom(12).row();
 
         for (int i = 0; i < offerButtons.length; i++) {
             int index = i;
             offerButtons[i] = new TextButton("", skin);
-            offerButtons[i].getLabel().setFontScale(1.25f);
+            offerButtons[i].getLabel().setFontScale(LABEL_SCALE);
             offerButtons[i].pad(8);
             offerButtons[i].addListener(changed(() -> chooseOffer(index)));
             box.add(offerButtons[i]).height(64).row();
@@ -197,6 +188,21 @@ public class Hud implements Disposable {
         if (index >= offers.size() || simulation.isRunOver()) return false;
         simulation.chooseUpgrade(offers.get(index));
         return true;
+    }
+
+    /**
+     * Adds a scaled label to a table on a row of its own.
+     *
+     * @param table The table to add the label to.
+     * @param text  The label's first text.
+     * @param scale The font scale.
+     * @return The label.
+     */
+    private Label addLabel(Table table, String text, float scale) {
+        Label label = new Label(text, skin);
+        label.setFontScale(scale);
+        table.add(label).row();
+        return label;
     }
 
     private ProgressBar.ProgressBarStyle healthBarStyle() {
