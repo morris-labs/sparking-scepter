@@ -75,10 +75,16 @@ input, runs as many ticks as the frame's time calls for, and then draws the
 result. Speeds, fire rates, and timers are per second, so the game plays at
 the same speed at any frame rate.
 
+Entities are moving to [Ashley](https://github.com/libgdx/ashley), libGDX's
+entity component system (see `docs/adr/0002-ashley-for-entities.md`). The
+simulation owns an Ashley engine and updates it each tick. Particles are
+Ashley entities; mobs and spells still use the old class tree.
+
 ## Project layout
 
 - `core/src/main/java/com/southcentralpositronics/reign_gdx/engine/`: arenas,
-  terrain, collision, pathfinding, entities, particles, input, the fixed
+  terrain, collision, pathfinding, entities, Ashley components and systems,
+  particles, input, the fixed
   timestep, rendering helpers, and the file chooser widget. Engine packages have no dependency on game packages.
 - `core/src/main/java/com/southcentralpositronics/reign_gdx/game/`: Reign's
   application, simulation, renderer, mobs, spells, level rules, HUD, minimap,

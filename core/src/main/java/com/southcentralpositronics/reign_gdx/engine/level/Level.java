@@ -1,15 +1,15 @@
 package com.southcentralpositronics.reign_gdx.engine.level;
 
+import com.badlogic.ashley.core.Engine;
 import com.badlogic.gdx.files.FileHandle;
 import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
-import com.southcentralpositronics.reign_gdx.engine.entity.Particle;
+import com.southcentralpositronics.reign_gdx.engine.entity.ParticleEmitter;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Node;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -22,8 +22,8 @@ import java.util.Random;
  */
 public class Level {
     protected final ArrayList<Entity> entities = new ArrayList<>();
-    protected final ArrayList<Particle> particles = new ArrayList<>();
     protected final Random random;
+    protected final ParticleEmitter particleEmitter;
     protected int width, height;
     public Tile[][] tiles;
 
@@ -31,42 +31,52 @@ public class Level {
      * Builds a level from an arena's tiles.
      *
      * @param arena The arena to play.
-     * @param seed  The seed for every random choice that the level's rules make.
+     * @param seed   The seed for every random choice that the level's rules
+     *               make. Particles draw from a separate source with the same
+     *               seed, so they don't change the rules' choices.
+     * @param engine The Ashley engine that holds the level's Ashley entities,
+     *               such as particles.
      */
-    public Level(Arena arena, long seed) {
-        this.tiles  = arena.tiles();
-        this.width  = arena.getWidth();
-        this.height = arena.getHeight();
-        this.random = new Random(seed);
-    }
-
-    /** Loads terrain from a level PNG file, without creating textures or a window. */
-    public Level(FileHandle image) {
-        this(Arena.fromPng(image), 0L);
-    }
-
-    /** Adds a generic entity or particle to the level. */
-    public void add(Entity entity) {
-        entity.init(this);
-        if (entity instanceof Particle particle) particles.add(particle);
-        else entities.add(entity);
+    public Level(Arena arena, long seed, Engine engine) {
+        this.tiles           = arena.tiles();
+        this.width           = arena.getWidth();
+        this.height          = arena.getHeight();
+        this.random          = new Random(seed);
+        this.particleEmitter = new ParticleEmitter(engine, new Random(seed));
     }
 
     /**
-     * Advances generic entities and particles by one tick.
+     * Loads terrain from a level PNG file, without creating textures or a
+     * window. Its particles go to an engine that nothing updates.
+     */
+    public Level(FileHandle image) {
+        this(Arena.fromPng(image), 0L, new Engine());
+    }
+
+    /** Adds a generic entity to the level. */
+    public void add(Entity entity) {
+        entity.init(this);
+        entities.add(entity);
+    }
+
+    /** Gets the emitter that bursts particles into the level's Ashley engine. */
+    public ParticleEmitter getParticleEmitter() {
+        return particleEmitter;
+    }
+
+    /**
+     * Advances generic entities by one tick.
      *
      * @param delta The length of a tick, in seconds.
      */
     public void update(float delta) {
         for (int i = 0, n = entities.size(); i < n; i++) entities.get(i).update();
-        for (int i = 0, n = particles.size(); i < n; i++) particles.get(i).update();
         remove();
     }
 
-    /** Removes expired generic entities and particles. */
+    /** Removes expired generic entities. */
     protected void remove() {
         entities.removeIf(Entity::isRemoved);
-        particles.removeIf(Entity::isRemoved);
     }
 
     public Tile getTileAt(int x, int y) {
@@ -206,11 +216,6 @@ public class Level {
     /** Gets the random number source that the level's rules draw from. */
     public Random getRandom() {
         return random;
-    }
-
-    /** Gets the particles, in the order they were added. */
-    public List<Particle> getParticles() {
-        return Collections.unmodifiableList(particles);
     }
 
     /**

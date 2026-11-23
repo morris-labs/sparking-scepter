@@ -2,7 +2,6 @@ package com.southcentralpositronics.reign_gdx.game.entity.projectile;
 
 import com.badlogic.gdx.math.Vector2;
 import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
-import com.southcentralpositronics.reign_gdx.engine.entity.spawner.ParticleSpawner;
 import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
 
 /**
@@ -74,14 +73,14 @@ public abstract class Projectile extends Entity {
 
     public void hitTarget() {
         if (removed) return;
-        level.add(new ParticleSpawner(position.x, position.y, angle, 10, 1000, level));
+        level.getParticleEmitter().burst(position.x, position.y, 10, 1000);
         removed = true;
     }
 
     @Override
     public void remove() {
         if (removed) return;
-        level.add(new ParticleSpawner(position.x, position.y, angle, 10, 250, level));
+        level.getParticleEmitter().burst(position.x, position.y, 10, 250);
         removed = true;
     }
 

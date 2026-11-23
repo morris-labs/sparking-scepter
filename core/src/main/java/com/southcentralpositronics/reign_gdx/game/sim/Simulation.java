@@ -1,6 +1,13 @@
 package com.southcentralpositronics.reign_gdx.game.sim;
 
-import com.southcentralpositronics.reign_gdx.engine.entity.Particle;
+import com.badlogic.ashley.core.Engine;
+import com.badlogic.ashley.core.Entity;
+import com.badlogic.ashley.core.Family;
+import com.badlogic.ashley.utils.ImmutableArray;
+import com.southcentralpositronics.reign_gdx.engine.entity.component.ParticleComponent;
+import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
+import com.southcentralpositronics.reign_gdx.engine.entity.system.LifetimeSystem;
+import com.southcentralpositronics.reign_gdx.engine.entity.system.ParticleSystem;
 import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
 import com.southcentralpositronics.reign_gdx.engine.level.Arena;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
@@ -26,15 +33,22 @@ import java.util.List;
  *
  * <p>The seed makes every random choice in the rules repeatable: the player's
  * start when the arena has none, where enemies spawn, and how they wander.
- * Particles are visual only and don't use it.
+ * Particles draw from a separate random source with the same seed, so they
+ * never change the rules' choices.
+ *
+ * <p>The simulation owns an Ashley engine (ADR 0002) and updates it once per
+ * tick, before the mobs and spells that still live on the old class tree.
+ * Particles are Ashley entities; mobs and spells move to Ashley next.
  */
 public final class Simulation {
     /** The points that each kill adds to the score. */
     public static final int POINTS_PER_KILL = 100;
 
-    private final ReignLevel level;
-    private final PlayerMob  player;
-    private       long       ticks = 0;
+    private final Engine                  engine = new Engine();
+    private final ImmutableArray<Entity>  particles;
+    private final ReignLevel              level;
+    private final PlayerMob               player;
+    private       long                    ticks  = 0;
 
     /**
      * Creates a simulation and starts the first wave.
@@ -44,7 +58,10 @@ public final class Simulation {
      * @param seed  The seed for every random choice in the rules.
      */
     public Simulation(Arena arena, long seed) {
-        level = new ReignLevel(arena, seed);
+        level = new ReignLevel(arena, seed, engine);
+        engine.addSystem(new ParticleSystem(level));
+        engine.addSystem(new LifetimeSystem());
+        particles = engine.getEntitiesFor(Family.all(ParticleComponent.class, PositionComponent.class).get());
         Vector2i start = arena.getPlayerStart().orElseGet(level::getRandomNonSolidTile);
         player = new PlayerMob(start.x, start.y);
         level.add(player);
@@ -63,6 +80,8 @@ public final class Simulation {
 
     /** Advances the simulation by one tick of {@link FixedTimestep#TICK_SECONDS}. */
     public void tick() {
+        // Ashley first, so entities that the old tree adds during this tick first move on the next one.
+        engine.update(FixedTimestep.TICK_SECONDS);
         level.update(FixedTimestep.TICK_SECONDS);
         ticks++;
     }
@@ -82,12 +101,14 @@ public final class Simulation {
      * enemies, then the player.
      */
     public List<EntityState> getEntities() {
-        List<Particle>   particles   = level.getParticles();
         List<Projectile> projectiles = level.getProjectiles();
         List<Mob>        mobs        = level.getMobs();
         List<EntityState> states = new ArrayList<>(particles.size() + projectiles.size() + mobs.size() + 1);
-        for (Particle particle : particles) {
-            states.add(new EntityState(EntityKind.PARTICLE, particle.getDrawX(), particle.getDrawY(), 0, Facing.DOWN,
+        for (Entity entity : particles) {
+            PositionComponent position = PositionComponent.MAPPER.get(entity);
+            ParticleComponent particle = ParticleComponent.MAPPER.get(entity);
+            // A particle draws at its ground point, raised by its height.
+            states.add(new EntityState(EntityKind.PARTICLE, position.x, position.y + particle.z, 0, Facing.DOWN,
                                        false, 0f));
         }
         for (Projectile projectile : projectiles) {

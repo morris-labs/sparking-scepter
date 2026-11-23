@@ -1,7 +1,7 @@
 package com.southcentralpositronics.reign_gdx.game.level;
 
+import com.badlogic.ashley.core.Engine;
 import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
-import com.southcentralpositronics.reign_gdx.engine.entity.Particle;
 import com.southcentralpositronics.reign_gdx.engine.level.Arena;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
@@ -47,10 +47,11 @@ public class ReignLevel extends Level {
      * Builds the level for an arena.
      *
      * @param arena The arena to play.
-     * @param seed  The seed for spawn positions and enemy behavior.
+     * @param seed   The seed for spawn positions and enemy behavior.
+     * @param engine The Ashley engine that holds particles.
      */
-    public ReignLevel(Arena arena, long seed) {
-        super(arena, seed);
+    public ReignLevel(Arena arena, long seed, Engine engine) {
+        super(arena, seed, engine);
     }
 
     /** Gets the enemies in the level. */
@@ -76,7 +77,6 @@ public class ReignLevel extends Level {
     public void update(float delta) {
         for (int i = 0, n = entities.size(); i < n; i++) entities.get(i).update();
         for (int i = 0, n = projectiles.size(); i < n; i++) projectiles.get(i).update();
-        for (int i = 0, n = particles.size(); i < n; i++) particles.get(i).update();
         for (int i = 0, n = mobs.size(); i < n; i++) mobs.get(i).update(delta);
         for (int i = 0, n = players.size(); i < n; i++) players.get(i).update(delta);
         for (int i = 0, n = mobs.size(); i < n; i++) mobs.get(i).checkForHits();
@@ -92,7 +92,6 @@ public class ReignLevel extends Level {
     protected void remove() {
         entities.removeIf(Entity::isRemoved);
         projectiles.removeIf(Entity::isRemoved);
-        particles.removeIf(Entity::isRemoved);
         mobs.removeIf(Entity::isRemoved);
         players.removeIf(Entity::isRemoved);
     }
@@ -100,9 +99,7 @@ public class ReignLevel extends Level {
     @Override
     public void add(Entity e) {
         e.init(this);
-        if (e instanceof Particle) {
-            particles.add((Particle) e);
-        } else if (e instanceof Projectile) {
+        if (e instanceof Projectile) {
             projectiles.add((Projectile) e);
         } else if (e instanceof PlayerMob) {
             players.add((PlayerMob) e);
