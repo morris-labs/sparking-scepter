@@ -15,6 +15,16 @@ Reign's own rules and content, built on the Engine: its mobs, spells, waves,
 and arenas.
 _Avoid_: app
 
+**Simulation**:
+The object that runs one run's rules in one arena, one tick at a time, with
+no window, graphics, or sound. The game draws it, and tests drive it.
+_Avoid_: world, model
+
+**Tick**:
+One fixed 1/60-second step of the simulation. Rendering runs at the frame
+rate and runs as many ticks as real time requires.
+_Avoid_: frame, step, update
+
 ## World
 
 **Arena**:

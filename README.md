@@ -36,8 +36,10 @@ From the repository root, run the JUnit 5 tests without a window:
 
 ```
 
-The level smoke test loads a PNG fixture without an application or OpenGL
-context. It checks tile types, collision flags, image orientation, and the
+The tests drive the game through the `Simulation` class, with no window,
+OpenGL context, or audio: they build a small arena, feed player input, run
+fixed ticks, and check what happens. A level smoke test also loads a PNG
+fixture and checks tile types, collision flags, image orientation, and the
 fallback for an unknown color.
 
 ## Controls
@@ -63,15 +65,24 @@ tile types:
 | `0xFF280A2B` | Void | Yes |
 
 Any other color becomes void. The game loads `assets/levels/TestMap.png`; to
-load another level, change `mapPath` in the `Game` class.
+load another level, change `MAP_PATH` in the `Game` class.
+
+## How the game runs
+
+The game's rules run in a simulation that advances in fixed ticks of 1/60 of
+a second. Each frame, the game turns the keyboard and mouse into player
+input, runs as many ticks as the frame's time calls for, and then draws the
+result. Speeds, fire rates, and timers are per second, so the game plays at
+the same speed at any frame rate.
 
 ## Project layout
 
-- `core/src/main/java/com/southcentralpositronics/reign_gdx/engine/`: terrain,
-  collision, pathfinding, entities, particles, input, rendering helpers, and
-  the file chooser widget. Engine packages have no dependency on game packages.
+- `core/src/main/java/com/southcentralpositronics/reign_gdx/engine/`: arenas,
+  terrain, collision, pathfinding, entities, particles, input, the fixed
+  timestep, rendering helpers, and the file chooser widget. Engine packages have no dependency on game packages.
 - `core/src/main/java/com/southcentralpositronics/reign_gdx/game/`: Reign's
-  application, mobs, spells, level rules, HUD, minimap, and map editor.
+  application, simulation, renderer, mobs, spells, level rules, HUD, minimap,
+  and map editor.
 - `core/src/test/`: JUnit 5 tests and PNG fixtures.
 - `lwjgl3/`: the desktop launchers.
 - `assets/`: atlases, levels, sprites, and UI skins. Both run tasks use this
