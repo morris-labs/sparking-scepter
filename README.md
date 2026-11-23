@@ -147,10 +147,14 @@ from an engine pathfinding service that the A* AI system calls.
   death, and waves), HUD, and minimap.
 - `core/src/test/`: JUnit 5 tests and the test arena.
 - `lwjgl3/`: the desktop launchers.
-- `assets/`: atlases, arenas and their tileset, sprites, and UI skins. The
-  run task uses this folder as the working directory.
+- `assets/`: atlases, arenas and their tileset, sprites, UI skins, and
+  audio. The run task uses this folder as the working directory.
 
 ## License
 
 Copyright (c) 2026 Isaac Morris. All rights reserved. See the `LICENSE`
 file.
+
+The sound effects and music in `assets/audio/` are public domain under CC0
+1.0 and aren't covered by the `LICENSE` file. The
+`assets/audio/CREDITS.md` file lists their sources.
