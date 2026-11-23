@@ -39,7 +39,7 @@ class WaveTest {
     }
 
     @Test
-    void waveEndsWhenItsLastEnemyDiesAndAFiveSecondBreakLeadsToTheNextWave() {
+    void waveEndsWhenItsLastEnemyDiesAndAFiveSecondBreakAfterTheUpgradeLeadsToTheNextWave() {
         Simulation simulation = new Simulation(corridor(), SEED);
         tick(simulation, 180, new ArrayList<>());
         assertEquals(1, simulation.getWave());
@@ -61,6 +61,8 @@ class WaveTest {
         assertEquals(5f, simulation.getBreakSecondsLeft(), 1e-6);
         assertEquals(1, simulation.getWave());
 
+        // The break waits for an upgrade; once one is chosen, it runs for 5 seconds.
+        simulation.chooseUpgrade(simulation.getUpgradeOffers().getFirst());
         List<SimulationEvent> events = new ArrayList<>();
         tick(simulation, 299, events);
         assertTrue(simulation.isBreak());
