@@ -11,6 +11,7 @@ import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
  * <ul>
  *   <li>{@code .}: grass
  *   <li>{@code #}: wall
+ *   <li>{@code H}: hedge
  *   <li>{@code ~}: water
  *   <li>{@code P}: grass with the player start on it
  * </ul>
@@ -33,6 +34,7 @@ final class TestArenas {
                 tiles[tx][ty] = switch (symbol) {
                     case '.', 'P' -> new Tile(Tile.tileType.grass, false);
                     case '#' -> new Tile(Tile.tileType.wall, true);
+                    case 'H' -> new Tile(Tile.tileType.hedge, true);
                     case '~' -> new Tile(Tile.tileType.water, false);
                     default -> throw new IllegalArgumentException("Unknown tile symbol: " + symbol);
                 };
