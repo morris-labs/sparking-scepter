@@ -5,6 +5,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.southcentralpositronics.reign_gdx.game.audio.GameAudio;
 import com.southcentralpositronics.reign_gdx.game.score.HighScoreStore;
 import com.southcentralpositronics.reign_gdx.game.score.PreferencesHighScoreStore;
 import com.southcentralpositronics.reign_gdx.game.screen.GameOverScreen;
@@ -14,7 +15,7 @@ import com.southcentralpositronics.reign_gdx.game.screen.RunResult;
 
 /**
  * The game application. It owns the resources that every screen shares, such
- * as the atlases, the UI skin, and the high score store, and switches between
+ * as the atlases, the UI skin, the audio, and the high score store, and switches between
  * the main menu, the play screen, and the game-over screen. The game opens on
  * the main menu.
  */
@@ -42,6 +43,7 @@ public class Game extends com.badlogic.gdx.Game {
     private TextureAtlas   mobAtlas, tileAtlas;
     private Skin           skin;
     private HighScoreStore highScores;
+    private GameAudio      audio;
 
     @Override
     public void create() {
@@ -49,8 +51,14 @@ public class Game extends com.badlogic.gdx.Game {
         mobAtlas   = new TextureAtlas(Gdx.files.internal("atlas/mobs.atlas"));
         tileAtlas  = new TextureAtlas(Gdx.files.internal("atlas/Tiles.atlas"));
         skin       = new Skin(Gdx.files.internal("ui/default/uiskin.json"));
+        audio      = new GameAudio();
         highScores = new PreferencesHighScoreStore(Gdx.app.getPreferences(PreferencesHighScoreStore.PREFERENCES_NAME));
         showMainMenu();
+    }
+
+    /** Gets the sound effects and music that the screens play. */
+    public GameAudio getAudio() {
+        return audio;
     }
 
     /** Gets the store that keeps the high score between runs and between launches. */
@@ -126,5 +134,6 @@ public class Game extends com.badlogic.gdx.Game {
         mobAtlas.dispose();
         tileAtlas.dispose();
         skin.dispose();
+        audio.dispose();
     }
 }

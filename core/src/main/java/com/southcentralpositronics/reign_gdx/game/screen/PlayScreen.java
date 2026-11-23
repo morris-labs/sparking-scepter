@@ -39,6 +39,9 @@ import com.southcentralpositronics.reign_gdx.game.ui.Hud;
  * run, and the pause screen draws over the frozen play screen with Resume and
  * Main menu buttons.
  *
+ * <p>Each frame it passes the simulation's events to the game's audio, and it
+ * plays the run music while it shows. The music pauses with the run.
+ *
  * <p>When the player dies, the screen records the score with the game's high
  * score store at once, keeps the world running for {@link #GAME_OVER_DELAY}
  * seconds so the death shows, and then switches to the game-over screen.
@@ -123,6 +126,7 @@ public class PlayScreen extends ScreenAdapter {
     @Override
     public void pause() {
         timestep.pause();
+        game.getAudio().pauseMusic();
         routeInput();
     }
 
@@ -137,6 +141,7 @@ public class PlayScreen extends ScreenAdapter {
     /** Closes the pause screen and runs ticks again. */
     private void resumeRun() {
         timestep.resume();
+        game.getAudio().resumeMusic();
         routeInput();
     }
 
@@ -157,11 +162,13 @@ public class PlayScreen extends ScreenAdapter {
     @Override
     public void show() {
         Gdx.input.setInputProcessor(input);
+        game.getAudio().startRunMusic();
     }
 
     @Override
     public void hide() {
         if (Gdx.input.getInputProcessor() == input) Gdx.input.setInputProcessor(null);
+        game.getAudio().stopRunMusic();
     }
 
     @Override
@@ -180,8 +187,7 @@ public class PlayScreen extends ScreenAdapter {
         keyboard.update();
         simulation.setInput(readInput());
         for (int ticks = timestep.advance(delta); ticks > 0; ticks--) simulation.tick();
-        // Nothing listens to events yet; drain them so they don't pile up.
-        simulation.drainEvents();
+        game.getAudio().play(simulation.drainEvents());
         if (simulation.isRunOver()) countDownToGameOver(delta);
         hud.update(delta);
         viewport.apply();
