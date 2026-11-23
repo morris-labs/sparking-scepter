@@ -1,0 +1,175 @@
+package com.southcentralpositronics.reign_gdx.game.sim;
+
+import com.southcentralpositronics.reign_gdx.engine.entity.Particle;
+import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
+import com.southcentralpositronics.reign_gdx.engine.level.Arena;
+import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
+import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
+import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
+import com.southcentralpositronics.reign_gdx.game.entity.mob.Mob;
+import com.southcentralpositronics.reign_gdx.game.entity.mob.PlayerMob;
+import com.southcentralpositronics.reign_gdx.game.entity.projectile.Projectile;
+import com.southcentralpositronics.reign_gdx.game.level.ReignLevel;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * One run of Reign in one arena, advanced one fixed tick at a time.
+ *
+ * <p>The simulation is the seam between the game's rules and everything that
+ * talks to a person: it has no dependency on OpenGL, the window, or audio. The
+ * play screen turns keyboard and mouse input into a {@link PlayerInput}, runs
+ * as many {@link #tick()} calls as a {@link FixedTimestep} asks for, draws
+ * {@link #getEntities()}, and passes {@link #drainEvents()} to audio and the
+ * HUD. Tests drive it the same way, with no window.
+ *
+ * <p>The seed makes every random choice in the rules repeatable: the player's
+ * start when the arena has none, where enemies spawn, and how they wander.
+ * Particles are visual only and don't use it.
+ */
+public final class Simulation {
+    /** The points that each kill adds to the score. */
+    public static final int POINTS_PER_KILL = 100;
+
+    private final ReignLevel level;
+    private final PlayerMob  player;
+    private       long       ticks = 0;
+
+    /**
+     * Creates a simulation and starts the first wave.
+     *
+     * @param arena The arena to play. The player appears at its player start,
+     *              or on a random open tile if it has none.
+     * @param seed  The seed for every random choice in the rules.
+     */
+    public Simulation(Arena arena, long seed) {
+        level = new ReignLevel(arena, seed);
+        Vector2i start = arena.getPlayerStart().orElseGet(level::getRandomNonSolidTile);
+        player = new PlayerMob(start.x, start.y);
+        level.add(player);
+        level.startWave();
+    }
+
+    /**
+     * Sets the player's input. The input holds for every later tick until the
+     * next call, as a held key does.
+     *
+     * @param input What the player does.
+     */
+    public void setInput(PlayerInput input) {
+        player.setInput(input);
+    }
+
+    /** Advances the simulation by one tick of {@link FixedTimestep#TICK_SECONDS}. */
+    public void tick() {
+        level.update(FixedTimestep.TICK_SECONDS);
+        ticks++;
+    }
+
+    /** Gets the number of ticks run so far. */
+    public long getTickCount() {
+        return ticks;
+    }
+
+    /** Gets a snapshot of the player. */
+    public EntityState getPlayer() {
+        return player.getState();
+    }
+
+    /**
+     * Gets a snapshot of every entity, in drawing order: particles, spells,
+     * enemies, then the player.
+     */
+    public List<EntityState> getEntities() {
+        List<Particle>   particles   = level.getParticles();
+        List<Projectile> projectiles = level.getProjectiles();
+        List<Mob>        mobs        = level.getMobs();
+        List<EntityState> states = new ArrayList<>(particles.size() + projectiles.size() + mobs.size() + 1);
+        for (Particle particle : particles) {
+            states.add(new EntityState(EntityKind.PARTICLE, particle.getDrawX(), particle.getDrawY(), 0, Facing.DOWN,
+                                       false, 0f));
+        }
+        for (Projectile projectile : projectiles) {
+            states.add(new EntityState(EntityKind.SPELL, projectile.getCenterX(), projectile.getCenterY(), 0,
+                                       Facing.DOWN, false, 0f));
+        }
+        for (Mob mob : mobs) states.add(mob.getState());
+        for (PlayerMob each : level.getPlayers()) states.add(each.getState());
+        return states;
+    }
+
+    /** Gets the number of enemies in the arena. */
+    public int getEnemyCount() {
+        return level.getMobs().size();
+    }
+
+    /** Gets the number of waves that have started. */
+    public int getWave() {
+        return level.getWave();
+    }
+
+    /** Checks whether a break between waves is running. Breaks don't exist yet, so this is always false. */
+    public boolean isBreak() {
+        return false;
+    }
+
+    /** Gets the seconds left in the break, or 0 when no break is running. */
+    public float getBreakSecondsLeft() {
+        return 0f;
+    }
+
+    /** Gets the score: {@link #POINTS_PER_KILL} for each enemy the player has killed. */
+    public long getScore() {
+        return player.getKills() * POINTS_PER_KILL;
+    }
+
+    /** Checks whether the run is over. The player can't die yet, so this is always false. */
+    public boolean isRunOver() {
+        return false;
+    }
+
+    /**
+     * Returns the events raised since the last call, in the order they
+     * happened, and forgets them.
+     */
+    public List<SimulationEvent> drainEvents() {
+        return level.drainEvents();
+    }
+
+    /** Gets the arena's width, in tiles. */
+    public int getWidth() {
+        return level.getWidth();
+    }
+
+    /** Gets the arena's height, in tiles. */
+    public int getHeight() {
+        return level.getHeight();
+    }
+
+    /** Gets a tile, or null outside the arena. Don't change it. */
+    public Tile getTileAt(int tx, int ty) {
+        return level.getTileAt(tx, ty);
+    }
+
+    /**
+     * Adds one enemy with its collision box on a tile, for tests and debugging.
+     *
+     * @param kind The kind of enemy; it must be an enemy kind.
+     * @param tx   The tile column.
+     * @param ty   The tile row.
+     */
+    public void spawnEnemy(EntityKind kind, int tx, int ty) {
+        level.spawnEnemy(kind, tx, ty);
+    }
+
+    /** Spawns another wave's worth of enemies without starting a new wave. This is the Add Mobs button. */
+    public void addEnemies() {
+        level.spawnEnemies();
+    }
+
+    /** Removes every enemy and pauses automatic waves until {@link #addEnemies()}. This is the Clear Mobs button. */
+    public void clearEnemies() {
+        level.clearMobs();
+    }
+}

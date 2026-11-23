@@ -1,20 +1,19 @@
 package com.southcentralpositronics.reign_gdx.game.level;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.math.MathUtils;
-import com.southcentralpositronics.reign_gdx.game.Game;
 import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
 import com.southcentralpositronics.reign_gdx.engine.entity.Particle;
+import com.southcentralpositronics.reign_gdx.engine.level.Arena;
+import com.southcentralpositronics.reign_gdx.engine.level.Level;
+import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.game.entity.mob.AStarChaserMob;
 import com.southcentralpositronics.reign_gdx.game.entity.mob.ChaserMob;
+import com.southcentralpositronics.reign_gdx.game.entity.mob.DummyMob;
 import com.southcentralpositronics.reign_gdx.game.entity.mob.Mob;
 import com.southcentralpositronics.reign_gdx.game.entity.mob.PlayerMob;
 import com.southcentralpositronics.reign_gdx.game.entity.mob.ShooterMob;
 import com.southcentralpositronics.reign_gdx.game.entity.projectile.Projectile;
-import com.southcentralpositronics.reign_gdx.engine.level.Level;
-import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
+import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
+import com.southcentralpositronics.reign_gdx.game.sim.SimulationEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,27 +21,36 @@ import java.util.function.BiFunction;
 
 /** Applies Reign's mob, spell, and wave rules to a level. */
 public class ReignLevel extends Level {
-    private final ArrayList<Projectile> projectiles = new ArrayList<>();
-    private final ArrayList<PlayerMob>  players     = new ArrayList<>();
-    private final ArrayList<Mob>        mobs        = new ArrayList<>();
+    private final ArrayList<Projectile>      projectiles = new ArrayList<>();
+    private final ArrayList<PlayerMob>       players     = new ArrayList<>();
+    private final ArrayList<Mob>             mobs        = new ArrayList<>();
+    private final ArrayList<SimulationEvent> events      = new ArrayList<>();
 
-    protected Game     game;
-
-    /** True after Clear Mobs, so the empty level doesn't spawn a new wave at once. */
+    /**
+     * True after Clear Mobs, or after a wave found no room to spawn, so the
+     * empty level doesn't try a new wave on every tick.
+     */
     private boolean wavesPaused = false;
+    /** The number of waves that have started. */
+    private int     wave        = 0;
 
-    /** The number of shooter enemies that {@link #generateMobs()} spawns. */
+    /** The number of shooter enemies in each wave. */
     private static final int    SHOOTER_COUNT      = 10;
-    /** The number of chaser enemies that {@link #generateMobs()} spawns. */
+    /** The number of chaser enemies in each wave. */
     private static final int    CHASER_COUNT       = 5;
-    /** The number of A* chaser enemies that {@link #generateMobs()} spawns. */
+    /** The number of A* chaser enemies in each wave. */
     private static final int    ASTAR_CHASER_COUNT = 5;
     /** The closest that a spawned mob can be to the player, in pixels. */
     private static final double MIN_SPAWN_DISTANCE = 6 * 16;
 
-    public ReignLevel(Game game) {
-        super(Gdx.files.internal(game.getMapPath()), game.getTileAtlas());
-        this.game = game;
+    /**
+     * Builds the level for an arena.
+     *
+     * @param arena The arena to play.
+     * @param seed  The seed for spawn positions and enemy behavior.
+     */
+    public ReignLevel(Arena arena, long seed) {
+        super(arena, seed);
     }
 
     /** Gets the enemies in the level. */
@@ -55,13 +63,14 @@ public class ReignLevel extends Level {
     }
 
     /**
-     * Updates every entity in the level, then drops the removed ones.
+     * Updates every entity in the level by one tick, then drops the removed
+     * ones.
      *
      * <p>The loops index the lists instead of using iterators, because an
      * update can add entities (for example, a mob firing a projectile).
-     * Entities added during this pass update on the next frame.
+     * Entities added during this pass update on the next tick.
      *
-     * @param delta The time since the last frame, in seconds.
+     * @param delta The length of a tick, in seconds.
      */
     @Override
     public void update(float delta) {
@@ -75,8 +84,8 @@ public class ReignLevel extends Level {
         remove();
 
         // As in the Java2D SpawnLevel, a new wave spawns once every enemy is dead.
-        // Clear Mobs pauses this until the next generateMobs() call.
-        if (mobs.isEmpty() && !wavesPaused && getClientPlayer() != null) generateMobs();
+        // Clear Mobs pauses this until the next Add Mobs.
+        if (mobs.isEmpty() && !wavesPaused && getClientPlayer() != null) startWave();
     }
 
     @Override
@@ -86,16 +95,6 @@ public class ReignLevel extends Level {
         particles.removeIf(Entity::isRemoved);
         mobs.removeIf(Entity::isRemoved);
         players.removeIf(Entity::isRemoved);
-    }
-
-    /** Draws the tiles, then particles, projectiles, enemies, and players. The camera handles scrolling. */
-    @Override
-    public void render(SpriteBatch batch) {
-        renderTiles(batch);
-        for (Particle p : particles) p.render(batch);
-        for (Projectile p : projectiles) p.render(batch);
-        for (Mob m : mobs) m.render(batch);
-        for (PlayerMob p : players) p.render(batch);
     }
 
     @Override
@@ -129,15 +128,33 @@ public class ReignLevel extends Level {
     }
 
     /**
-     * Spawns the starting enemies for this level, as the Java2D
-     * {@code Level.generateMobs()} did.
+     * Starts the next wave: spawns a wave of enemies and raises
+     * {@link SimulationEvent.Type#WAVE_START}. If no enemy finds room, the wave
+     * doesn't count and automatic waves pause.
      */
-    public void generateMobs() {
+    public void startWave() {
+        if (spawnEnemies() == 0) {
+            wavesPaused = true;
+            return;
+        }
+        wave++;
+        PlayerMob player = getClientPlayer();
+        double    x      = player != null ? player.getBoxCenterX() : 0;
+        double    y      = player != null ? player.getBoxCenterY() : 0;
+        raise(SimulationEvent.Type.WAVE_START, EntityKind.PLAYER, x, y);
+    }
+
+    /**
+     * Spawns one wave's enemies, as the Java2D {@code Level.generateMobs()}
+     * did, and resumes automatic waves.
+     *
+     * @return The number of enemies spawned.
+     */
+    public int spawnEnemies() {
         wavesPaused = false;
-        TextureAtlas atlas = game.getMobAtlas();
-        spawnMobs(SHOOTER_COUNT, (tx, ty) -> new ShooterMob(tx, ty, atlas));
-        spawnMobs(CHASER_COUNT, (tx, ty) -> new ChaserMob(tx, ty, atlas));
-        spawnMobs(ASTAR_CHASER_COUNT, (tx, ty) -> new AStarChaserMob(tx, ty, atlas));
+        return spawnMobs(SHOOTER_COUNT, ShooterMob::new)
+            + spawnMobs(CHASER_COUNT, ChaserMob::new)
+            + spawnMobs(ASTAR_CHASER_COUNT, AStarChaserMob::new);
     }
 
     /**
@@ -152,13 +169,13 @@ public class ReignLevel extends Level {
      * @return The number of mobs spawned.
      */
     public int spawnMobs(int count, BiFunction<Integer, Integer, Mob> factory) {
-        PlayerMob player   = getClientPlayer();
-        int       spawned  = 0;
+        PlayerMob player  = getClientPlayer();
+        int       spawned = 0;
 
         for (int i = 0; i < count; i++) {
             for (int tries = 0; tries < width * height; tries++) {
-                int    tx = MathUtils.random(0, width - 1);
-                int    ty = MathUtils.random(0, height - 1);
+                int  tx   = random.nextInt(width);
+                int  ty   = random.nextInt(height);
                 Tile tile = tiles[tx][ty];
                 if (tile == null || tile.isSolid()) continue;
                 if (player != null && Math.hypot(player.getTileX() - tx, player.getTileY() - ty) * Tile.SIZE
@@ -173,18 +190,48 @@ public class ReignLevel extends Level {
         return spawned;
     }
 
-    /** Removes every enemy and pauses new waves until the next {@link #generateMobs()}. */
+    /**
+     * Adds one enemy of a kind with its collision box on a tile.
+     *
+     * @param kind The kind of enemy.
+     * @param tx   The tile column.
+     * @param ty   The tile row.
+     */
+    public void spawnEnemy(EntityKind kind, int tx, int ty) {
+        Mob mob = switch (kind) {
+            case DUMMY -> new DummyMob(tx, ty);
+            case CHASER -> new ChaserMob(tx, ty);
+            case ASTAR_CHASER -> new AStarChaserMob(tx, ty);
+            case SHOOTER -> new ShooterMob(tx, ty);
+            default -> throw new IllegalArgumentException(kind + " isn't an enemy");
+        };
+        add(mob);
+    }
+
+    /** Removes every enemy and pauses new waves until the next {@link #spawnEnemies()}. */
     public void clearMobs() {
         wavesPaused = true;
         mobs.clear();
     }
 
+    /** Records an event for the simulation to report. */
+    public void raise(SimulationEvent.Type type, EntityKind kind, double x, double y) {
+        events.add(new SimulationEvent(type, kind, x, y));
+    }
+
+    /** Returns the events raised since the last call, and forgets them. */
+    public List<SimulationEvent> drainEvents() {
+        List<SimulationEvent> drained = List.copyOf(events);
+        events.clear();
+        return drained;
+    }
+
+    /** Gets the number of waves that have started. */
+    public int getWave() {
+        return wave;
+    }
+
     public ArrayList<Projectile> getProjectiles() {
         return projectiles;
     }
-
-    public Game getGame() {
-        return game;
-    }
-
 }

@@ -1,6 +1,5 @@
 package com.southcentralpositronics.reign_gdx.engine.graphics;
 
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 
 import java.util.HashMap;
@@ -19,25 +18,19 @@ public class TileLoader {
     /** Void in the Java2D level files, such as {@code SpawnLevel.png}. */
     public static final int COLOR_VOID_WHITE = 0xFFFFFFFF;
 
-    public static Map<Integer, Tile> loadTiles(TextureAtlas atlas) {
+    /** Builds the color-to-tile table. The tiles have no textures; a renderer draws each tile by its type. */
+    public static Map<Integer, Tile> loadTiles() {
         Map<Integer, Tile> tileMap = new HashMap<>();
 
-        tileMap.put(COLOR_GRASS,   createTile(Tile.tileType.grass, false, atlas, "grass"));
-        tileMap.put(COLOR_HEDGE,   createTile(Tile.tileType.hedge, true, atlas, "hedge"));
-        tileMap.put(COLOR_WATER,   createTile(Tile.tileType.water, false, atlas, "water"));
-        tileMap.put(COLOR_WALL,    createTile(Tile.tileType.wall, true,  atlas, "wall"));
-        tileMap.put(COLOR_WALLALT, createTile(Tile.tileType.wall_alt, true, atlas, "wall_alt"));
-        tileMap.put(COLOR_FLOOR,   createTile(Tile.tileType.floor, false, atlas, "floor"));
-        tileMap.put(COLOR_VOID,    createTile(Tile.tileType.void_tile, true, atlas, "void_tile")); // fallback
+        tileMap.put(COLOR_GRASS,   new Tile(Tile.tileType.grass, false));
+        tileMap.put(COLOR_HEDGE,   new Tile(Tile.tileType.hedge, true));
+        tileMap.put(COLOR_WATER,   new Tile(Tile.tileType.water, false));
+        tileMap.put(COLOR_WALL,    new Tile(Tile.tileType.wall, true));
+        tileMap.put(COLOR_WALLALT, new Tile(Tile.tileType.wall_alt, true));
+        tileMap.put(COLOR_FLOOR,   new Tile(Tile.tileType.floor, false));
+        tileMap.put(COLOR_VOID,    new Tile(Tile.tileType.void_tile, true)); // fallback
         tileMap.put(COLOR_VOID_WHITE, tileMap.get(COLOR_VOID));
 
         return tileMap;
     }
-
-    private static Tile createTile(Tile.tileType type, boolean solid, TextureAtlas atlas, String regionName) {
-        Tile tile = new Tile(type, solid);
-        if (atlas != null) tile.setTexture(atlas.findRegion(regionName));
-        return tile;
-    }
-
 }

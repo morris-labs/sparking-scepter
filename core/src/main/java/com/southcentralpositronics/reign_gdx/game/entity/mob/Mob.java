@@ -1,26 +1,29 @@
 package com.southcentralpositronics.reign_gdx.game.entity.mob;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.viewport.Viewport;
 import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
-import com.southcentralpositronics.reign_gdx.engine.level.Level;
-import com.southcentralpositronics.reign_gdx.game.level.ReignLevel;
-import com.southcentralpositronics.reign_gdx.game.entity.projectile.Projectile;
-import com.southcentralpositronics.reign_gdx.game.entity.projectile.SpellProjectile;
 import com.southcentralpositronics.reign_gdx.engine.entity.spawner.ParticleSpawner;
-import com.southcentralpositronics.reign_gdx.engine.graphics.AnimatedSprite;
-import com.southcentralpositronics.reign_gdx.engine.input.Mouse;
+import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
+import com.southcentralpositronics.reign_gdx.game.entity.projectile.Projectile;
+import com.southcentralpositronics.reign_gdx.game.entity.projectile.SpellProjectile;
+import com.southcentralpositronics.reign_gdx.game.level.ReignLevel;
+import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
+import com.southcentralpositronics.reign_gdx.game.sim.EntityState;
+import com.southcentralpositronics.reign_gdx.game.sim.Facing;
+import com.southcentralpositronics.reign_gdx.game.sim.SimulationEvent;
 
 import java.util.List;
 
-public class Mob extends Entity {
+/**
+ * A mob: an entity with health that moves and fights. Mobs hold no textures; a
+ * renderer draws them from {@link #getState()}.
+ *
+ * <p>Every speed and timer is per second. {@link ReignLevel#update(float)}
+ * calls {@link #update(float)} once per tick with the tick length.
+ */
+public abstract class Mob extends Entity {
     protected ReignLevel gameLevel;
 
     @Override
@@ -41,16 +44,12 @@ public class Mob extends Entity {
     protected static final int    HURT_HEIGHT       = 24;
     /** How far outside the body a projectile's center still counts as a hit, in pixels. */
     protected static final int    HIT_RADIUS        = 4;
-    /** The atlas region prefix of the enemy sprite, ported from the Java2D dummy sheet. */
-    protected static final String ENEMY_SPRITE      = "King_Berno";
 
-    protected AnimatedSprite mobUp, mobDown, mobLeft, mobRight;
-    protected AnimatedSprite animSprite;
-    protected Direction      direction;
-    protected Viewport       viewport;
-
-    protected boolean      walking;
-    protected double       health;
+    protected Facing  direction     = Facing.DOWN;
+    protected boolean walking;
+    protected double  health;
+    /** The seconds this mob has been walking; 0 while it stands still. */
+    protected float   animationTime = 0f;
 
 
     /**
@@ -66,6 +65,9 @@ public class Mob extends Entity {
         paddingBottom = 0;
     }
 
+    /** Gets the kind of mob, which the renderer and the score use. */
+    public abstract EntityKind kind();
+
     /**
      * Places the mob so that its collision box fills the bottom half of a tile.
      *
@@ -79,57 +81,55 @@ public class Mob extends Entity {
 
     /** Gets the tile column under the center of the collision box. */
     public int getTileX() {
-        double centerX = x + paddingLeft + (mobSize - paddingLeft - paddingRight) / 2.0;
-        return (int) Math.floor(centerX / tileSize);
+        return (int) Math.floor(getBoxCenterX() / tileSize);
     }
 
     /** Gets the tile row under the center of the collision box. */
     public int getTileY() {
-        double centerY = y + paddingBottom + (mobSize - paddingTop - paddingBottom) / 2.0;
-        return (int) Math.floor(centerY / tileSize);
+        return (int) Math.floor(getBoxCenterY() / tileSize);
+    }
+
+    /** Gets the x coordinate of the center of the collision box. */
+    public double getBoxCenterX() {
+        return x + paddingLeft + (mobSize - paddingLeft - paddingRight) / 2.0;
+    }
+
+    /** Gets the y coordinate of the center of the collision box. */
+    public double getBoxCenterY() {
+        return y + paddingBottom + (mobSize - paddingTop - paddingBottom) / 2.0;
+    }
+
+    /** Takes a snapshot of this mob for the simulation's queries. */
+    public EntityState getState() {
+        return new EntityState(kind(), getBoxCenterX(), getBoxCenterY(), health, direction, walking, animationTime);
     }
 
     /**
-     * Loads the four walking animations for this mob and faces it down.
+     * Moves the mob, one pixel at a time so it stops flush against a wall.
      *
-     * @param atlas  The atlas that holds the mob sprites.
-     * @param prefix The region prefix; the atlas must hold
-     *               {@code PREFIX_Up}, {@code PREFIX_Down}, {@code PREFIX_Left},
-     *               and {@code PREFIX_Right} regions.
+     * @param xa The distance to move along x this tick, in pixels.
+     * @param ya The distance to move along y this tick, in pixels.
      */
-    protected void loadAnimations(TextureAtlas atlas, String prefix) {
-        mobUp      = new AnimatedSprite(atlas, prefix + "_Up", 0.2f, true);
-        mobDown    = new AnimatedSprite(atlas, prefix + "_Down", 0.2f, true);
-        mobLeft    = new AnimatedSprite(atlas, prefix + "_Left", 0.2f, true);
-        mobRight   = new AnimatedSprite(atlas, prefix + "_Right", 0.2f, true);
-        animSprite = mobDown;
-        direction  = Direction.DOWN;
-    }
-
     public void move(double xa, double ya) {
-        if (xa > 0) direction = Direction.RIGHT;
-        else if (xa < 0) direction = Direction.LEFT;
+        if (xa > 0) direction = Facing.RIGHT;
+        else if (xa < 0) direction = Facing.LEFT;
 
-        if (ya > 0) direction = Direction.DOWN;
-        else if (ya < 0) direction = Direction.UP;
+        // Known issue 13: in libGDX's y-up world these two are swapped.
+        if (ya > 0) direction = Facing.DOWN;
+        else if (ya < 0) direction = Facing.UP;
 
-        // Move one pixel at a time so the mob stops flush against a wall.
-        for (int xStep = 0; xStep < Math.abs(xa); xStep++) {
-            double stepX = xa > 0 ? 1 : -1;
-            if (!collision(x + stepX, y)) {
-                x += stepX;
-            } else {
-                break;
-            }
+        for (double remaining = xa; remaining != 0; ) {
+            double step = Math.max(-1, Math.min(1, remaining));
+            if (collision(x + step, y)) break;
+            x += step;
+            remaining -= step;
         }
 
-        for (int yStep = 0; yStep < Math.abs(ya); yStep++) {
-            double stepY = ya > 0 ? 1 : -1;
-            if (!collision(x, y + stepY)) {
-                y += stepY;
-            } else {
-                break;
-            }
+        for (double remaining = ya; remaining != 0; ) {
+            double step = Math.max(-1, Math.min(1, remaining));
+            if (collision(x, y + step)) break;
+            y += step;
+            remaining -= step;
         }
 
         int mapPixelWidth  = level.getWidth() * tileSize;
@@ -142,29 +142,19 @@ public class Mob extends Entity {
         walking = xa != 0 || ya != 0;
     }
 
-
-    public void render(SpriteBatch batch) {
-        if (animSprite != null) {
-            TextureRegion frame = animSprite.getCurrentFrame();
-            batch.draw(frame, (float) x, (float) y);
-        }
-    }
-
-
     /**
      * Fires a spell from this mob's body center.
      *
      * @param angle The direction, in radians, counterclockwise from +x.
      */
     protected void shootAt(double angle) {
-        TextureAtlas tileAtlas  = gameLevel.getGame().getTileAtlas();
-        Projectile   projectile = new SpellProjectile(getBodyCenterX(), getBodyCenterY(), angle, this, tileAtlas);
-        level.add(projectile);
+        level.add(new SpellProjectile(getBodyCenterX(), getBodyCenterY(), angle, this));
+        gameLevel.raise(SimulationEvent.Type.CAST, kind(), getBodyCenterX(), getBodyCenterY());
     }
 
     /** Gets the x coordinate of the center of the body that projectiles hit. */
     public double getBodyCenterX() {
-        return x + paddingLeft + (mobSize - paddingLeft - paddingRight) / 2.0;
+        return getBoxCenterX();
     }
 
     /** Gets the y coordinate of the center of the body that projectiles hit. */
@@ -175,7 +165,7 @@ public class Mob extends Entity {
     /**
      * Fires at the closest player within {@link #DETECTION_DISTANCE}, at most
      * once every {@link Projectile#SHOT_DELAY} seconds. The caller must count
-     * {@code shootCooldown} down by the frame time.
+     * {@code shootCooldown} down by the tick length.
      */
     protected void shootClosest() {
         if (shootCooldown > 0f) return;
@@ -194,48 +184,35 @@ public class Mob extends Entity {
         }
 
         if (closestPlayer != null) {
-            double dx          = closestPlayer.getBodyCenterX() - getBodyCenterX();
-            double dy          = closestPlayer.getBodyCenterY() - getBodyCenterY();
+            double dx = closestPlayer.getBodyCenterX() - getBodyCenterX();
+            double dy = closestPlayer.getBodyCenterY() - getBodyCenterY();
             shootAt(Math.atan2(dy, dx));
             shootCooldown = Projectile.SHOT_DELAY;
         }
     }
 
-    protected void firePlayerSpell() {
-        if (shootCooldown > 0f) return;
-
-        Vector2 worldMouse = viewport.unproject(new Vector2(Mouse.getX(), Mouse.getY()));
-        double  dx         = worldMouse.x - getBodyCenterX();
-        double  dy         = worldMouse.y - getBodyCenterY();
-        shootAt(Math.atan2(dy, dx));
-
-        // The player fires as often as the enemies do.
-        shootCooldown = Projectile.SHOT_DELAY;
-    }
-
-    /** Counts down the shot cooldown and advances the animation. Subclasses override it. */
+    /**
+     * Counts down the shot cooldown and advances the animation. Subclasses
+     * override it.
+     *
+     * @param delta The length of a tick, in seconds.
+     */
     public void update(float delta) {
-        if (shootCooldown > 0f) {
-            shootCooldown -= Gdx.graphics.getDeltaTime();
-        }
-        updateAnimation(delta, walking, direction);
+        if (shootCooldown > 0f) shootCooldown -= delta;
+        updateAnimation(delta);
     }
 
-    /** Picks the animation for the direction, and plays it only while walking. */
-    protected void updateAnimation(float delta, boolean isWalking, Direction direction) {
-        if (mobUp == null || mobDown == null || mobLeft == null || mobRight == null) return;
+    /** Advances the walking animation while the mob walks, and resets it when the mob stops. */
+    protected void updateAnimation(float delta) {
+        animationTime = walking ? animationTime + delta : 0f;
+    }
 
-        switch (direction) {
-            case UP -> animSprite = mobUp;
-            case DOWN -> animSprite = mobDown;
-            case LEFT -> animSprite = mobLeft;
-            case RIGHT -> animSprite = mobRight;
-        }
-
-        if (isWalking) {
-            animSprite.update(delta);
-        } else {
-            animSprite.setFrame(0);
+    /** Sets the facing from the larger of the two move components, as every enemy does. */
+    protected void faceMovement(double xa, double ya) {
+        if (Math.abs(ya) > Math.abs(xa)) {
+            direction = ya < 0 ? Facing.UP : Facing.DOWN;
+        } else if (xa != 0) {
+            direction = xa < 0 ? Facing.LEFT : Facing.RIGHT;
         }
     }
 
@@ -246,7 +223,7 @@ public class Mob extends Entity {
     /**
      * Applies every projectile that hits this mob. Enemies take hits from
      * player projectiles, and players take hits from enemy projectiles.
-     * {@link ReignLevel#update(float)} calls this once per frame.
+     * {@link ReignLevel#update(float)} calls this once per tick.
      */
     public void checkForHits() {
         if (removed) return;
@@ -281,8 +258,10 @@ public class Mob extends Entity {
      */
     protected void onHit(Projectile projectile) {
         health -= ENEMY_HIT_DAMAGE;
+        gameLevel.raise(SimulationEvent.Type.HIT, kind(), getBodyCenterX(), getBodyCenterY());
         if (health <= HEALTH_EPSILON) {
             remove();
+            gameLevel.raise(SimulationEvent.Type.ENEMY_DEATH, kind(), getBodyCenterX(), getBodyCenterY());
             if (projectile.getFiredBy() instanceof PlayerMob player) player.scoredKill();
         }
     }
@@ -292,30 +271,10 @@ public class Mob extends Entity {
         return health;
     }
 
-    public enum Direction {
-        UP, DOWN, LEFT, RIGHT
-    }
-
     @Override
     public void remove() {
         if (removed) return;
         super.remove();
         level.add(new ParticleSpawner(x + mobSize / 2.0, y + HURT_HEIGHT / 2.0, 0, 10, 100, level));
-    }
-
-    public int getPaddingLeft() {
-        return paddingLeft;
-    }
-
-    public int getPaddingRight() {
-        return paddingRight;
-    }
-
-    public int getPaddingTop() {
-        return paddingTop;
-    }
-
-    public int getPaddingBottom() {
-        return paddingBottom;
     }
 }

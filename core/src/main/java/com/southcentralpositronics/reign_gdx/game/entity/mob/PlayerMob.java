@@ -1,84 +1,70 @@
 package com.southcentralpositronics.reign_gdx.game.entity.mob;
 
-import com.southcentralpositronics.reign_gdx.game.Game;
+import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
+import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
 import com.southcentralpositronics.reign_gdx.game.entity.projectile.Projectile;
-import com.southcentralpositronics.reign_gdx.engine.input.Keyboard;
-import com.southcentralpositronics.reign_gdx.engine.input.Mouse;
+import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
+import com.southcentralpositronics.reign_gdx.game.sim.SimulationEvent;
 
-
-/** The player: moves with WASD or the arrow keys and fires spells at the mouse. */
+/** The player: moves and casts spells as its {@link PlayerInput} asks. */
 public class PlayerMob extends Mob {
-    private Keyboard keyboard;
-    private Mouse    mouse;
-    private String   name;
-
-    private final double  speed    = 2;
-    private       long    score    = 0;
+    /** The walking speed along each axis, in pixels per second. */
+    public static final double SPEED             = 120;
     /** The health the player loses per enemy hit, as in the Java2D version. */
     private static final double PLAYER_HIT_DAMAGE = 0.01;
-    protected     int     height;
-    protected     int     width;
 
-    public PlayerMob(Game game, int x, int y, String name) {
-        this.x           = x;
-        this.y           = y;
-        keyboard         = game.getKeyboard();
-        mouse            = game.getMouse();
-        this.name        = name;
-        this.health      = 1.0;
-        this.type        = Type.PLAYER;
-        walking          = false;
-        direction        = Direction.DOWN;
+    private PlayerInput input = PlayerInput.NONE;
+    private long        kills = 0;
 
-        loadAnimations(game.getMobAtlas(), "King_Cherno");
-
-        height = animSprite.getCurrentFrame().getRegionHeight();
-        width  = animSprite.getCurrentFrame().getRegionWidth();
-
-        viewport = game.getViewport();
+    /**
+     * Creates the player with its collision box on a tile.
+     *
+     * @param tx The tile column.
+     * @param ty The tile row.
+     */
+    public PlayerMob(int tx, int ty) {
+        placeOnTile(tx, ty);
+        this.type = Type.PLAYER;
     }
 
+    @Override
+    public EntityKind kind() {
+        return EntityKind.PLAYER;
+    }
+
+    /** Sets the input that the player follows from the next tick on. */
+    public void setInput(PlayerInput input) {
+        this.input = input;
+    }
 
     @Override
     public void update(float delta) {
-        double xa = 0, ya = 0;
+        double step = FixedTimestep.perTick(SPEED);
+        double xa   = input.moveX() * step;
+        double ya   = input.moveY() * step;
 
-        if (keyboard.up) {
-            ya += speed;
-            direction = Direction.UP;
-        } else if (keyboard.down) {
-            ya -= speed;
-            direction = Direction.DOWN;
-        }
+        walking = xa != 0 || ya != 0;
+        if (walking) move(xa, ya);
+        if (shootCooldown > 0f) shootCooldown -= delta;
+        updateAnimation(delta);
+        if (input.casting()) castAt(input.aimX(), input.aimY());
+    }
 
-        if (keyboard.left) {
-            xa -= speed;
-            direction = Direction.LEFT;
-        } else if (keyboard.right) {
-            xa += speed;
-            direction = Direction.RIGHT;
-        }
-
-        boolean isMoving = xa != 0 || ya != 0;
-        if (isMoving) {
-            move(xa, ya);
-        }
-        if (shootCooldown > 0f) {
-            shootCooldown -= delta;
-        }
-        updateAnimation(delta, isMoving, direction);
-        if (mouse.isLeftPressed()) {
-            firePlayerSpell();
-        }
+    /** Casts a spell toward a world point, at most once every {@link Projectile#SHOT_DELAY} seconds. */
+    private void castAt(double aimX, double aimY) {
+        if (shootCooldown > 0f) return;
+        shootAt(Math.atan2(aimY - getBodyCenterY(), aimX - getBodyCenterX()));
+        // The player casts as often as the enemies do.
+        shootCooldown = Projectile.SHOT_DELAY;
     }
 
     /**
-     * Called when this player kills an enemy. The score goes up by one kill,
-     * shown as 100 points, and the player heals by half, up to full health.
-     * The Java2D version didn't cap the healing.
+     * Called when this player kills an enemy. The kill count goes up by one,
+     * and the player heals by half, up to full health. The Java2D version
+     * didn't cap the healing.
      */
     public void scoredKill() {
-        score++;
+        kills++;
         health = Math.min(1.0, health + 0.5);
     }
 
@@ -89,22 +75,11 @@ public class PlayerMob extends Mob {
     @Override
     protected void onHit(Projectile projectile) {
         health = Math.max(0.0, health - PLAYER_HIT_DAMAGE);
+        gameLevel.raise(SimulationEvent.Type.PLAYER_DAMAGE, kind(), getBodyCenterX(), getBodyCenterY());
     }
 
-    /** Gets the number of kills; the HUD shows 100 points per kill. */
-    public long getScore() {
-        return score;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public int getWidth() {
-        return width;
+    /** Gets the number of enemies this player has killed. */
+    public long getKills() {
+        return kills;
     }
 }

@@ -1,47 +1,48 @@
 package com.southcentralpositronics.reign_gdx.engine.level;
 
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.math.MathUtils;
 import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
 import com.southcentralpositronics.reign_gdx.engine.entity.Particle;
-import com.southcentralpositronics.reign_gdx.engine.graphics.TileLoader;
-import com.southcentralpositronics.reign_gdx.engine.graphics.TileMapBuilder;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Node;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
-import com.southcentralpositronics.reign_gdx.engine.level.tile.TileCoordinates;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Random;
 
-/** Owns a PNG level's terrain, collision, paths, and generic entities. */
+/**
+ * Owns a level's terrain, collision, paths, and generic entities. A level
+ * holds no textures and needs no window or OpenGL context; a renderer draws
+ * it from the outside.
+ */
 public class Level {
     protected final ArrayList<Entity> entities = new ArrayList<>();
     protected final ArrayList<Particle> particles = new ArrayList<>();
+    protected final Random random;
     protected int width, height;
     public Tile[][] tiles;
 
-    /** Loads terrain without creating textures or a window. */
-    public Level(FileHandle image) {
-        this(image, null);
+    /**
+     * Builds a level from an arena's tiles.
+     *
+     * @param arena The arena to play.
+     * @param seed  The seed for every random choice that the level's rules make.
+     */
+    public Level(Arena arena, long seed) {
+        this.tiles  = arena.tiles();
+        this.width  = arena.getWidth();
+        this.height = arena.getHeight();
+        this.random = new Random(seed);
     }
 
-    /** Loads terrain and uses the supplied atlas for tile textures. */
-    public Level(FileHandle image, TextureAtlas atlas) {
-        Pixmap colorMap = new Pixmap(image);
-        try {
-            width = colorMap.getWidth();
-            height = colorMap.getHeight();
-            tiles = TileMapBuilder.buildTileGrid(colorMap, TileLoader.loadTiles(atlas));
-        } finally {
-            colorMap.dispose();
-        }
+    /** Loads terrain from a level PNG file, without creating textures or a window. */
+    public Level(FileHandle image) {
+        this(Arena.fromPng(image), 0L);
     }
 
     /** Adds a generic entity or particle to the level. */
@@ -51,7 +52,11 @@ public class Level {
         else entities.add(entity);
     }
 
-    /** Advances generic entities and particles by one frame. */
+    /**
+     * Advances generic entities and particles by one tick.
+     *
+     * @param delta The length of a tick, in seconds.
+     */
     public void update(float delta) {
         for (int i = 0, n = entities.size(); i < n; i++) entities.get(i).update();
         for (int i = 0, n = particles.size(); i < n; i++) particles.get(i).update();
@@ -62,12 +67,6 @@ public class Level {
     protected void remove() {
         entities.removeIf(Entity::isRemoved);
         particles.removeIf(Entity::isRemoved);
-    }
-
-    /** Draws terrain and particles. */
-    public void render(SpriteBatch batch) {
-        renderTiles(batch);
-        for (Particle particle : particles) particle.render(batch);
     }
 
     public Tile getTileAt(int x, int y) {
@@ -89,10 +88,10 @@ public class Level {
         int    hitboxWidth  = width - padLeft - padRight;
         int    hitboxHeight = height - padTop - padBottom;
 
-        int left   = (int) (hitboxX / tileSize);
-        int right  = (int) ((hitboxX + hitboxWidth - 1) / tileSize);
-        int top    = (int) (hitboxY / tileSize);
-        int bottom = (int) ((hitboxY + hitboxHeight - 1) / tileSize);
+        int left   = (int) Math.floor(hitboxX / tileSize);
+        int right  = (int) Math.floor((hitboxX + hitboxWidth - 1) / tileSize);
+        int top    = (int) Math.floor(hitboxY / tileSize);
+        int bottom = (int) Math.floor((hitboxY + hitboxHeight - 1) / tileSize);
 
         for (int tx = left; tx <= right; tx++) {
             for (int ty = top; ty <= bottom; ty++) {
@@ -204,30 +203,30 @@ public class Level {
         return height;
     }
 
+    /** Gets the random number source that the level's rules draw from. */
+    public Random getRandom() {
+        return random;
+    }
+
+    /** Gets the particles, in the order they were added. */
+    public List<Particle> getParticles() {
+        return Collections.unmodifiableList(particles);
+    }
+
     /**
      * Picks a random open tile away from the map edge. After {@code width *
      * height} misses, it gives up and returns tile (0, 0).
+     *
+     * @return The tile's column and row.
      */
-    public TileCoordinates getRandomNonSolidTile() {
-        if (tiles == null || tiles.length == 0) throw new IllegalStateException("Level not loaded");
-
+    public Vector2i getRandomNonSolidTile() {
         int maxTries = width * height;
-        for (int tries = 0; tries < maxTries; tries++) {
-            int  x = MathUtils.random(1, width - 2);
-            int  y = MathUtils.random(1, height - 2);
+        for (int tries = 0; tries < maxTries && width > 2 && height > 2; tries++) {
+            int  x = 1 + random.nextInt(width - 2);
+            int  y = 1 + random.nextInt(height - 2);
             Tile t = tiles[x][y];
-            if (t != null && !t.isSolid()) return new TileCoordinates(x, y);
+            if (t != null && !t.isSolid()) return new Vector2i(x, y);
         }
-        return new TileCoordinates(0, 0);
-    }
-
-    protected void renderTiles(SpriteBatch batch) {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                Tile tile = tiles[x][y];
-                if (tile == null || tile.getTexture() == null) continue;
-                batch.draw(tile.getTexture(), x * Tile.SIZE, y * Tile.SIZE, Tile.SIZE, Tile.SIZE);
-            }
-        }
+        return new Vector2i(0, 0);
     }
 }

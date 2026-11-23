@@ -6,10 +6,10 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.scenes.scene2d.ui.Widget;
 import com.badlogic.gdx.utils.Disposable;
-import com.southcentralpositronics.reign_gdx.game.entity.mob.Mob;
 import com.southcentralpositronics.reign_gdx.engine.graphics.TileLoader;
-import com.southcentralpositronics.reign_gdx.game.level.ReignLevel;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
+import com.southcentralpositronics.reign_gdx.game.sim.EntityState;
+import com.southcentralpositronics.reign_gdx.game.sim.Simulation;
 
 import java.util.List;
 
@@ -26,7 +26,7 @@ public class Minimap extends Widget implements Disposable {
     private static final int ENEMY_COLOR  = Color.rgba8888(Color.RED);
     private static final int VOID_COLOR   = Color.rgba8888(Color.BLACK);
 
-    private final ReignLevel   level;
+    private final Simulation simulation;
     private final int     tilesWide;
     private final int     tilesHigh;
     private final Pixmap  terrain;
@@ -34,22 +34,22 @@ public class Minimap extends Widget implements Disposable {
     private final Texture texture;
 
     /**
-     * Builds the minimap for a level. The terrain is drawn once; mobs are
-     * drawn over it each frame.
+     * Builds the minimap for a simulation's arena. The terrain is drawn once;
+     * mobs are drawn over it each frame.
      *
-     * @param level The level to show.
+     * @param simulation The simulation to show.
      */
-    public Minimap(ReignLevel level) {
-        this.level = level;
-        tilesWide  = level.getWidth();
-        tilesHigh  = level.getHeight();
+    public Minimap(Simulation simulation) {
+        this.simulation = simulation;
+        tilesWide       = simulation.getWidth();
+        tilesHigh       = simulation.getHeight();
         terrain    = new Pixmap(tilesWide, tilesHigh, Pixmap.Format.RGBA8888);
         frame      = new Pixmap(tilesWide, tilesHigh, Pixmap.Format.RGBA8888);
         frame.setBlending(Pixmap.Blending.None);
         // Pixmap rows run top to bottom and tile rows bottom to top.
         for (int tx = 0; tx < tilesWide; tx++) {
             for (int ty = 0; ty < tilesHigh; ty++) {
-                terrain.drawPixel(tx, tilesHigh - 1 - ty, tileColor(level.getTileAt(tx, ty)));
+                terrain.drawPixel(tx, tilesHigh - 1 - ty, tileColor(simulation.getTileAt(tx, ty)));
             }
         }
         texture = new Texture(frame);
@@ -76,15 +76,18 @@ public class Minimap extends Widget implements Disposable {
     public void act(float delta) {
         super.act(delta);
         frame.drawPixmap(terrain, 0, 0);
-        List<Mob> mobs = level.getMobs();
-        for (int i = 0, n = mobs.size(); i < n; i++) plot(mobs.get(i), ENEMY_COLOR);
-        if (level.getClientPlayer() != null) plot(level.getClientPlayer(), PLAYER_COLOR);
+        List<EntityState> entities = simulation.getEntities();
+        for (int i = 0, n = entities.size(); i < n; i++) {
+            EntityState entity = entities.get(i);
+            if (entity.kind().isEnemy()) plot(entity, ENEMY_COLOR);
+        }
+        plot(simulation.getPlayer(), PLAYER_COLOR);
         texture.draw(frame, 0, 0);
     }
 
-    private void plot(Mob mob, int color) {
-        int tx = mob.getTileX();
-        int ty = mob.getTileY();
+    private void plot(EntityState mob, int color) {
+        int tx = (int) Math.floor(mob.x() / Tile.SIZE);
+        int ty = (int) Math.floor(mob.y() / Tile.SIZE);
         if (tx < 0 || ty < 0 || tx >= tilesWide || ty >= tilesHigh) return;
         frame.drawPixel(tx, tilesHigh - 1 - ty, color);
     }
