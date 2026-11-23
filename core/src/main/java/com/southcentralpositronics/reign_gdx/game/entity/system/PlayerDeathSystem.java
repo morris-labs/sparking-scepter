@@ -5,7 +5,6 @@ import com.badlogic.ashley.systems.IteratingSystem;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.HealthComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.game.entity.Families;
 import com.southcentralpositronics.reign_gdx.game.entity.component.MobComponent;
@@ -40,7 +39,7 @@ public final class PlayerDeathSystem extends IteratingSystem {
      * @param run    The run that the death ends.
      */
     public PlayerDeathSystem(Level level, EventLog events, RunState run) {
-        super(Families.PLAYERS, SystemPriority.DEATH);
+        super(Families.PLAYERS, GamePriority.DEATH);
         this.level  = level;
         this.events = events;
         this.run    = run;

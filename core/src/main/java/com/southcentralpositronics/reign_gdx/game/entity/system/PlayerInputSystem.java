@@ -5,7 +5,6 @@ import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.systems.IteratingSystem;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.HealthComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.VelocityComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
 import com.southcentralpositronics.reign_gdx.game.entity.component.CasterComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.PlayerComponent;
@@ -19,7 +18,7 @@ public final class PlayerInputSystem extends IteratingSystem {
     public PlayerInputSystem() {
         super(Family.all(PlayerComponent.class, VelocityComponent.class, CasterComponent.class,
                          HealthComponent.class).get(),
-              SystemPriority.INPUT);
+              GamePriority.INPUT);
     }
 
     @Override

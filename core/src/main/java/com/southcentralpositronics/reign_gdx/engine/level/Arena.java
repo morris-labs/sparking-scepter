@@ -13,7 +13,7 @@ import java.util.Optional;
  * holds no entities and no textures.
  */
 public final class Arena {
-    /** The tile property that names the tile type, one of {@link Tile.tileType}. */
+    /** The tile property that names the tile type, one of {@link Tile.TileType}. */
     public static final String TILE_TYPE       = "tileType";
     /** The boolean tile property that stops mobs from walking onto the tile. */
     public static final String BLOCKS_MOVEMENT = "blocksMovement";
@@ -32,8 +32,8 @@ public final class Arena {
      * Creates an arena from a tile grid, with no spawn points.
      *
      * @param tiles       The tiles, indexed {@code [x][y]} with y up.
-     * @param playerStart The tile where the player appears, or null to let the
-     *                    simulation pick a random open tile.
+     * @param playerStart The tile where the player appears. A simulation
+     *                    rejects an arena whose player start is null.
      */
     public Arena(Tile[][] tiles, Vector2i playerStart) {
         this(tiles, playerStart, List.of());
@@ -43,8 +43,8 @@ public final class Arena {
      * Creates an arena from a tile grid.
      *
      * @param tiles       The tiles, indexed {@code [x][y]} with y up.
-     * @param playerStart The tile where the player appears, or null to let the
-     *                    simulation pick a random open tile.
+     * @param playerStart The tile where the player appears. A simulation
+     *                    rejects an arena whose player start is null.
      * @param spawnPoints The tiles where enemies enter, in the order the arena
      *                    lists them.
      */

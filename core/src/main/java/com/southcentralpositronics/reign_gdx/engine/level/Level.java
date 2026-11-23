@@ -65,7 +65,7 @@ public class Level {
      * @return Whether the box is blocked.
      */
     public boolean blocksMovement(double left, double bottom, int width, int height) {
-        return boxBlocked(left, bottom, width, height, Tile::isSolid);
+        return boxBlocked(left, bottom, width, height, Tile::blocksMovement);
     }
 
     /**
@@ -103,7 +103,7 @@ public class Level {
     public boolean isWalkable(int tx, int ty) {
         if (!inBounds(tx, ty)) return false;
         Tile tile = tiles[tx][ty];
-        return tile != null && !tile.isSolid();
+        return tile != null && !tile.blocksMovement();
     }
 
     private boolean inBounds(int tx, int ty) {
@@ -129,22 +129,5 @@ public class Level {
     /** Gets the random number source that the level's rules draw from. */
     public Random getRandom() {
         return random;
-    }
-
-    /**
-     * Picks a random open tile away from the map edge. After {@code width *
-     * height} misses, it gives up and returns tile (0, 0).
-     *
-     * @return The tile's column and row.
-     */
-    public Vector2i getRandomNonSolidTile() {
-        int maxTries = width * height;
-        for (int tries = 0; tries < maxTries && width > 2 && height > 2; tries++) {
-            int  x = 1 + random.nextInt(width - 2);
-            int  y = 1 + random.nextInt(height - 2);
-            Tile t = tiles[x][y];
-            if (t != null && !t.isSolid()) return new Vector2i(x, y);
-        }
-        return new Vector2i(0, 0);
     }
 }

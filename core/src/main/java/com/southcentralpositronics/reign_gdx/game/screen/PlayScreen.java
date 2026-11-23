@@ -25,7 +25,8 @@ import com.southcentralpositronics.reign_gdx.engine.level.Arena;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
 import com.southcentralpositronics.reign_gdx.game.Game;
-import com.southcentralpositronics.reign_gdx.game.render.WorldRenderer;
+import com.southcentralpositronics.reign_gdx.game.entity.MobFactory;
+import com.southcentralpositronics.reign_gdx.game.render.ArenaRenderer;
 import com.southcentralpositronics.reign_gdx.game.sim.EntityState;
 import com.southcentralpositronics.reign_gdx.game.sim.Simulation;
 import com.southcentralpositronics.reign_gdx.game.ui.Hud;
@@ -43,13 +44,10 @@ import com.southcentralpositronics.reign_gdx.game.ui.Hud;
  * plays the run music while it shows. The music pauses with the run.
  *
  * <p>When the player dies, the screen records the score with the game's high
- * score store at once, keeps the world running for {@link #GAME_OVER_DELAY}
+ * score store at once, keeps the simulation running for {@link #GAME_OVER_DELAY}
  * seconds so the death shows, and then switches to the game-over screen.
  */
 public class PlayScreen extends ScreenAdapter {
-    /** The width and height of a mob's collision box, in pixels. */
-    private static final int     HITBOX_WIDTH  = 16;
-    private static final int     HITBOX_HEIGHT = 8;
     /** The tint drawn over the play screen while paused. */
     private static final Color   PAUSE_DIM     = new Color(0, 0, 0, 0.6f);
     /** The seconds between the player's death and the game-over screen. */
@@ -72,7 +70,7 @@ public class PlayScreen extends ScreenAdapter {
     private final Simulation         simulation;
     /** Outlines every mob's collision box: one of the debug tools. */
     private final boolean            drawHitboxes;
-    private final WorldRenderer      worldRenderer;
+    private final ArenaRenderer      arenaRenderer;
     private final Hud                hud;
     private final Stage              pauseStage;
     private final InputMultiplexer   input    = new InputMultiplexer();
@@ -95,14 +93,14 @@ public class PlayScreen extends ScreenAdapter {
         this.game     = game;
         batch         = game.getBatch();
         shapeRenderer = new ShapeRenderer();
-        // The world is always VIEWPORT_HEIGHT pixels tall; its width follows the
+        // The view is always VIEWPORT_HEIGHT pixels tall; its width follows the
         // game area's aspect ratio, so the side panel doesn't squash the view.
         viewport = new ExtendViewport(Game.VIEWPORT_HEIGHT, Game.VIEWPORT_HEIGHT, new OrthographicCamera());
         camera   = (OrthographicCamera) viewport.getCamera();
         camera.position.set(Game.VIEWPORT_WIDTH / 2f, Game.VIEWPORT_HEIGHT / 2f, 0);
 
         simulation    = new Simulation(Arena.fromTmx(Gdx.files.internal(Game.ARENA_PATH)), seed);
-        worldRenderer = new WorldRenderer(game.getMobAtlas(), game.getTileAtlas());
+        arenaRenderer = new ArenaRenderer(game.getMobAtlas(), game.getTileAtlas());
         drawHitboxes  = game.isDebug();
         hud           = new Hud(simulation, Game.PLAYER_NAME, game.isDebug());
 
@@ -206,7 +204,7 @@ public class PlayScreen extends ScreenAdapter {
         float cameraX = MathUtils.clamp(spriteX, halfWidth, mapPixelWidth - halfWidth);
         float cameraY = MathUtils.clamp(spriteY, halfHeight, mapPixelHeight - halfHeight);
 
-        // Keep the camera on whole world pixels; the clamp bounds can be fractional.
+        // Keep the camera on whole pixels; the clamp bounds can be fractional.
         camera.position.set(Math.round(cameraX), Math.round(cameraY), 0);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
@@ -214,7 +212,7 @@ public class PlayScreen extends ScreenAdapter {
 
         batch.begin();
         batch.enableBlending();
-        worldRenderer.render(batch, simulation);
+        arenaRenderer.render(batch, simulation);
         batch.end();
 
         if (drawHitboxes) drawHitboxes();
@@ -260,12 +258,12 @@ public class PlayScreen extends ScreenAdapter {
         shapeRenderer.setColor(Color.RED);
         for (EntityState mob : simulation.getEntities()) {
             if (!mob.kind().isMob()) continue;
-            float hitboxX = (float) mob.x() - HITBOX_WIDTH / 2f;
-            float hitboxY = (float) mob.y() - HITBOX_HEIGHT / 2f;
-            shapeRenderer.rect(hitboxX, hitboxY, thickness, HITBOX_HEIGHT);
-            shapeRenderer.rect(hitboxX + HITBOX_WIDTH - thickness, hitboxY, thickness, HITBOX_HEIGHT);
-            shapeRenderer.rect(hitboxX, hitboxY, HITBOX_WIDTH, thickness);
-            shapeRenderer.rect(hitboxX, hitboxY + HITBOX_HEIGHT - thickness, HITBOX_WIDTH, thickness);
+            float hitboxX = (float) mob.x() - MobFactory.BODY_WIDTH / 2f;
+            float hitboxY = (float) mob.y() - MobFactory.BODY_HEIGHT / 2f;
+            shapeRenderer.rect(hitboxX, hitboxY, thickness, MobFactory.BODY_HEIGHT);
+            shapeRenderer.rect(hitboxX + MobFactory.BODY_WIDTH - thickness, hitboxY, thickness, MobFactory.BODY_HEIGHT);
+            shapeRenderer.rect(hitboxX, hitboxY, MobFactory.BODY_WIDTH, thickness);
+            shapeRenderer.rect(hitboxX, hitboxY + MobFactory.BODY_HEIGHT - thickness, MobFactory.BODY_WIDTH, thickness);
         }
         shapeRenderer.end();
     }
@@ -273,7 +271,7 @@ public class PlayScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         shapeRenderer.dispose();
-        worldRenderer.dispose();
+        arenaRenderer.dispose();
         hud.dispose();
         pauseStage.dispose();
     }

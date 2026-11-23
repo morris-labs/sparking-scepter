@@ -112,7 +112,7 @@ instead of the tile images:
 | Void | `void_tile` | Yes | Yes |
 
 A new tile type needs only a tileset entry and a sprite of the same name in
-the tile atlas, plus a value in the `Tile.tileType` enum. If an arena has no
+the tile atlas, plus a value in the `Tile.TileType` enum. If an arena has no
 player start, no spawn points, an object on a blocking tile, or a tile without
 a `tileType`, loading it fails with an error that names the file and the
 problem.

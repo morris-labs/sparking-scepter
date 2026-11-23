@@ -6,7 +6,6 @@ import com.badlogic.ashley.systems.IteratingSystem;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.VelocityComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.game.entity.component.WanderAiComponent;
 
@@ -31,7 +30,7 @@ public final class WanderAiSystem extends IteratingSystem {
      */
     public WanderAiSystem(Level level) {
         super(Family.all(WanderAiComponent.class, PositionComponent.class, BodyComponent.class,
-                         VelocityComponent.class).get(), SystemPriority.AI);
+                         VelocityComponent.class).get(), GamePriority.AI);
         this.level = level;
     }
 

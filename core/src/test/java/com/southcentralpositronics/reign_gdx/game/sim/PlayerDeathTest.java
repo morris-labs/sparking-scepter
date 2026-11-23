@@ -31,6 +31,23 @@ class PlayerDeathTest {
     }
 
     @Test
+    void shooterSpellHittingThePlayerCostsHealthAndRaisesPlayerDamage() {
+        // A Shooter has no contact damage, so only its spells can hurt the player.
+        Simulation simulation = new Simulation(TestArenas.parse(
+            "#######",
+            "#P....#",
+            "#######"), SEED);
+        simulation.spawnEnemy(EntityKind.SHOOTER, 4, 1);
+        List<SimulationEvent> events = new ArrayList<>();
+
+        tick(simulation, 120, events);
+
+        assertTrue(simulation.getPlayer().health() < 1.0, "the Shooter's spells cost no health");
+        assertTrue(count(events, SimulationEvent.Type.PLAYER_DAMAGE) > 0);
+        assertFalse(simulation.isRunOver());
+    }
+
+    @Test
     void playerAtZeroHealthEndsTheRunAndRaisesOnePlayerDeath() {
         Simulation simulation = new Simulation(TestArenas.parse(
             "#######",

@@ -5,7 +5,6 @@ import com.badlogic.ashley.core.Family;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.HealthComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.game.entity.component.ContactDamageComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.MobComponent;
 import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
@@ -33,7 +32,7 @@ public final class ContactDamageSystem extends PlayerAwareSystem {
      */
     public ContactDamageSystem(EventLog events) {
         super(Family.all(ContactDamageComponent.class, PositionComponent.class, BodyComponent.class).get(),
-              SystemPriority.CONTACT);
+              GamePriority.CONTACT);
         this.events = events;
     }
 

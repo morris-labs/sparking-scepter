@@ -22,7 +22,7 @@ public enum Upgrade {
         }
     },
     /** Raises the most health the player can have by {@link #HEALTH_BONUS}, and heals by the same amount. */
-    MORE_HEALTH("More health", "Raise maximum health by 25%") {
+    MORE_HEALTH("More health", "Gain 25% of base maximum health") {
         @Override
         void apply(Entity player) {
             HealthComponent health = HealthComponent.MAPPER.get(player);

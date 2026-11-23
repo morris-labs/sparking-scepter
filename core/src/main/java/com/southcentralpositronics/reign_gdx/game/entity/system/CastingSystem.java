@@ -5,7 +5,6 @@ import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.systems.IteratingSystem;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.game.entity.SpellFactory;
 import com.southcentralpositronics.reign_gdx.game.entity.component.CasterComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.MobComponent;
@@ -36,7 +35,7 @@ public final class CastingSystem extends IteratingSystem {
      */
     public CastingSystem(SpellFactory spells, EventLog events) {
         super(Family.all(CasterComponent.class, MobComponent.class, PositionComponent.class, BodyComponent.class)
-                  .get(), SystemPriority.CASTING);
+                  .get(), GamePriority.CASTING);
         this.spells = spells;
         this.events = events;
     }

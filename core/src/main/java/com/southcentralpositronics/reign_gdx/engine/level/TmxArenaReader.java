@@ -87,7 +87,7 @@ final class TmxArenaReader {
         }
         for (int tx = 0; tx < width; tx++) {
             for (int ty = 0; ty < height; ty++) {
-                if (tiles[tx][ty] == null) tiles[tx][ty] = new Tile(Tile.tileType.void_tile, true);
+                if (tiles[tx][ty] == null) tiles[tx][ty] = new Tile(Tile.TileType.void_tile, true);
                 tiles[tx][ty].x = tx;
                 tiles[tx][ty].y = ty;
             }
@@ -101,12 +101,12 @@ final class TmxArenaReader {
         // The ID is the map's global tile ID: the tileset's first ID plus the tile's ID in Tiled.
         String        tileName   = "the tile with global ID " + mapTile.getId();
         if (typeName == null) throw fail("uses " + tileName + ", which has no " + Arena.TILE_TYPE + " property");
-        Tile.tileType type;
+        Tile.TileType type;
         try {
-            type = Tile.tileType.valueOf(typeName);
+            type = Tile.TileType.valueOf(typeName);
         } catch (IllegalArgumentException e) {
             throw fail("uses " + tileName + ", whose " + Arena.TILE_TYPE + " \"" + typeName + "\" isn't one of "
-                       + Arrays.toString(Tile.tileType.values()));
+                       + Arrays.toString(Tile.TileType.values()));
         }
         return new Tile(type, flag(properties, Arena.BLOCKS_MOVEMENT), flag(properties, Arena.BLOCKS_SPELLS));
     }
@@ -135,7 +135,7 @@ final class TmxArenaReader {
         // Report the tile the way Tiled shows it: the row counts down from the top.
         String place = "places " + what + " at tile (" + tx + ", " + (height - 1 - ty) + ") in Tiled, ";
         if (tx < 0 || ty < 0 || tx >= width || ty >= height) throw fail(place + "outside the map");
-        if (tiles[tx][ty].isSolid()) throw fail(place + "on a tile that blocks movement");
+        if (tiles[tx][ty].blocksMovement()) throw fail(place + "on a tile that blocks movement");
         return new Vector2i(tx, ty);
     }
 }

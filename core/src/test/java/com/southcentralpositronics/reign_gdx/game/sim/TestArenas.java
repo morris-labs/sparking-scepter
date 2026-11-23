@@ -16,7 +16,8 @@ import java.util.List;
  *   <li>{@code #}: wall
  *   <li>{@code H}: hedge
  *   <li>{@code ~}: water, which blocks movement but not spells
- *   <li>{@code P}: grass with the player start on it
+ *   <li>{@code P}: grass with the player start on it. A simulation needs
+ *       one, and rejects an arena without it.
  *   <li>{@code S}: grass with a spawn point on it. Spawn points list from the
  *       top row down, left to right within a row.
  * </ul>
@@ -41,10 +42,10 @@ final class TestArenas {
             for (int tx = 0; tx < width; tx++) {
                 char symbol = rows[row].charAt(tx);
                 tiles[tx][ty] = switch (symbol) {
-                    case '.', 'P', 'S' -> new Tile(Tile.tileType.grass, false);
-                    case '#' -> new Tile(Tile.tileType.wall, true);
-                    case 'H' -> new Tile(Tile.tileType.hedge, true);
-                    case '~' -> new Tile(Tile.tileType.water, true, false);
+                    case '.', 'P', 'S' -> new Tile(Tile.TileType.grass, false);
+                    case '#' -> new Tile(Tile.TileType.wall, true);
+                    case 'H' -> new Tile(Tile.TileType.hedge, true);
+                    case '~' -> new Tile(Tile.TileType.water, true, false);
                     default -> throw new IllegalArgumentException("Unknown tile symbol: " + symbol);
                 };
                 if (symbol == 'P') playerStart = new Vector2i(tx, ty);
