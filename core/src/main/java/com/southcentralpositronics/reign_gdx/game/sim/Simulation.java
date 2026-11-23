@@ -9,6 +9,7 @@ import com.southcentralpositronics.reign_gdx.engine.entity.component.ParticleCom
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.system.LifetimeSystem;
 import com.southcentralpositronics.reign_gdx.engine.entity.system.MovementSystem;
+import com.southcentralpositronics.reign_gdx.engine.entity.system.SeparationSystem;
 import com.southcentralpositronics.reign_gdx.engine.entity.system.ParticleSystem;
 import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
 import com.southcentralpositronics.reign_gdx.engine.level.Arena;
@@ -90,6 +91,7 @@ public final class Simulation {
         engine.addSystem(new WanderAiSystem(level));
         engine.addSystem(new ShooterAiSystem());
         engine.addSystem(new MovementSystem(level));
+        engine.addSystem(new SeparationSystem(level, Families.MOBS));
         engine.addSystem(new CastingSystem(new SpellFactory(engine), events));
         engine.addSystem(new SpellSystem(level, events));
         engine.addSystem(new DeathSystem(level, events));
