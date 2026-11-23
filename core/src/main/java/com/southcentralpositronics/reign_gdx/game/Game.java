@@ -5,13 +5,18 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.southcentralpositronics.reign_gdx.game.score.HighScoreStore;
+import com.southcentralpositronics.reign_gdx.game.score.PreferencesHighScoreStore;
+import com.southcentralpositronics.reign_gdx.game.screen.GameOverScreen;
 import com.southcentralpositronics.reign_gdx.game.screen.MainMenuScreen;
 import com.southcentralpositronics.reign_gdx.game.screen.PlayScreen;
+import com.southcentralpositronics.reign_gdx.game.screen.RunResult;
 
 /**
  * The game application. It owns the resources that every screen shares, such
- * as the atlases and the UI skin, and switches between the main menu and the
- * play screen. The game opens on the main menu.
+ * as the atlases, the UI skin, and the high score store, and switches between
+ * the main menu, the play screen, and the game-over screen. The game opens on
+ * the main menu.
  */
 public class Game extends com.badlogic.gdx.Game {
     public static final int    WIDTH           = 1920;
@@ -33,17 +38,24 @@ public class Game extends com.badlogic.gdx.Game {
 
     private final boolean debug = Boolean.getBoolean(DEBUG_PROPERTY);
 
-    private SpriteBatch  batch;
-    private TextureAtlas mobAtlas, tileAtlas;
-    private Skin         skin;
+    private SpriteBatch    batch;
+    private TextureAtlas   mobAtlas, tileAtlas;
+    private Skin           skin;
+    private HighScoreStore highScores;
 
     @Override
     public void create() {
-        batch     = new SpriteBatch();
-        mobAtlas  = new TextureAtlas(Gdx.files.internal("atlas/mobs.atlas"));
-        tileAtlas = new TextureAtlas(Gdx.files.internal("atlas/Tiles.atlas"));
-        skin      = new Skin(Gdx.files.internal("ui/default/uiskin.json"));
+        batch      = new SpriteBatch();
+        mobAtlas   = new TextureAtlas(Gdx.files.internal("atlas/mobs.atlas"));
+        tileAtlas  = new TextureAtlas(Gdx.files.internal("atlas/Tiles.atlas"));
+        skin       = new Skin(Gdx.files.internal("ui/default/uiskin.json"));
+        highScores = new PreferencesHighScoreStore(Gdx.app.getPreferences(PreferencesHighScoreStore.PREFERENCES_NAME));
         showMainMenu();
+    }
+
+    /** Gets the store that keeps the high score between runs and between launches. */
+    public HighScoreStore getHighScores() {
+        return highScores;
     }
 
     /** Shows the main menu and ends any run in progress. */
@@ -51,9 +63,22 @@ public class Game extends com.badlogic.gdx.Game {
         switchTo(new MainMenuScreen(this));
     }
 
-    /** Starts a new run on the play screen. */
+    /**
+     * Starts a fresh run on the play screen. Every run gets its own
+     * {@link PlayScreen} and {@code Simulation}, with a new seed, so nothing
+     * from an earlier run carries over.
+     */
     public void startRun() {
         switchTo(new PlayScreen(this, System.nanoTime()));
+    }
+
+    /**
+     * Shows the game-over screen for a run that ended.
+     *
+     * @param result How the run ended.
+     */
+    public void showGameOver(RunResult result) {
+        switchTo(new GameOverScreen(this, result));
     }
 
     /**

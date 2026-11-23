@@ -10,6 +10,7 @@ import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.game.entity.component.AStarAiComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.CasterComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.ChaseAiComponent;
+import com.southcentralpositronics.reign_gdx.game.entity.component.ContactDamageComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.EnemyComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.MobComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.PlayerComponent;
@@ -45,6 +46,18 @@ public final class MobFactory {
     public static final double PLAYER_SPELL_DAMAGE = 0.1;
     /** The health that an enemy's spell takes from the player, as in the Java2D version. */
     public static final double ENEMY_SPELL_DAMAGE  = 0.01;
+    /** The health that a Chaser or A* Chaser takes from the player with each touch: 10 touches kill. */
+    public static final double CONTACT_DAMAGE      = 0.1;
+    /** The seconds between a Chaser's or A* Chaser's touches that hurt: a Chaser kills in 5 seconds. */
+    public static final float  CONTACT_DELAY       = 0.5f;
+    /** The points a Dummy is worth. It never attacks. */
+    public static final long   DUMMY_SCORE         = 50;
+    /** The points a Chaser is worth. */
+    public static final long   CHASER_SCORE        = 100;
+    /** The points an A* Chaser is worth: it finds its way around walls. */
+    public static final long   ASTAR_CHASER_SCORE  = 150;
+    /** The points a Shooter is worth: it attacks from a distance. */
+    public static final long   SHOOTER_SCORE       = 200;
     /** The farthest the player can be for a Chaser to chase, in pixels. */
     public static final double CHASE_RANGE         = 800;
     /** The farthest the player can be for a Shooter to cast, in pixels. */
@@ -109,37 +122,39 @@ public final class MobFactory {
 
     /** Adds a Dummy: an enemy that wanders and never attacks. */
     public Entity createDummy(int tx, int ty) {
-        Entity dummy = createEnemyBase(EntityKind.DUMMY, tx, ty);
+        Entity dummy = createEnemyBase(EntityKind.DUMMY, tx, ty, DUMMY_SCORE);
         dummy.add(wander(0.5f, 1f));
         engine.addEntity(dummy);
         return dummy;
     }
 
-    /** Adds a Chaser: an enemy that walks straight at the player, ignoring walls. */
+    /** Adds a Chaser: an enemy that walks straight at the player, ignoring walls, and hurts it by touch. */
     public Entity createChaser(int tx, int ty) {
-        Entity           chaser = createEnemyBase(EntityKind.CHASER, tx, ty);
+        Entity           chaser = createEnemyBase(EntityKind.CHASER, tx, ty, CHASER_SCORE);
         ChaseAiComponent chase  = engine.createComponent(ChaseAiComponent.class);
         chase.speed = CHASER_SPEED;
         chase.range = CHASE_RANGE;
         chaser.add(chase);
+        chaser.add(contactDamage());
         engine.addEntity(chaser);
         return chaser;
     }
 
-    /** Adds an A* Chaser: an enemy that follows an A* path to the player, around walls. */
+    /** Adds an A* Chaser: an enemy that follows an A* path to the player, around walls, and hurts it by touch. */
     public Entity createAStarChaser(int tx, int ty) {
-        Entity           chaser = createEnemyBase(EntityKind.ASTAR_CHASER, tx, ty);
+        Entity           chaser = createEnemyBase(EntityKind.ASTAR_CHASER, tx, ty, ASTAR_CHASER_SCORE);
         AStarAiComponent ai     = engine.createComponent(AStarAiComponent.class);
         ai.speed          = CHASER_SPEED;
         ai.refreshSeconds = PATH_REFRESH_SECONDS;
         chaser.add(ai);
+        chaser.add(contactDamage());
         engine.addEntity(chaser);
         return chaser;
     }
 
     /** Adds a Shooter: an enemy that wanders and casts at the player in range. */
     public Entity createShooter(int tx, int ty) {
-        Entity             shooter = createEnemyBase(EntityKind.SHOOTER, tx, ty);
+        Entity             shooter = createEnemyBase(EntityKind.SHOOTER, tx, ty, SHOOTER_SCORE);
         ShooterAiComponent ai      = engine.createComponent(ShooterAiComponent.class);
         ai.range = SHOOTER_RANGE;
         shooter.add(wander(0.5f, 1.5f));
@@ -149,9 +164,11 @@ public final class MobFactory {
         return shooter;
     }
 
-    private Entity createEnemyBase(EntityKind kind, int tx, int ty) {
-        Entity enemy = createMob(kind, tx, ty);
-        enemy.add(engine.createComponent(EnemyComponent.class));
+    private Entity createEnemyBase(EntityKind kind, int tx, int ty, long score) {
+        Entity         enemy  = createMob(kind, tx, ty);
+        EnemyComponent marker = engine.createComponent(EnemyComponent.class);
+        marker.score = score;
+        enemy.add(marker);
         return enemy;
     }
 
@@ -187,6 +204,13 @@ public final class MobFactory {
         caster.shotDelay   = SHOT_DELAY;
         caster.spellDamage = spellDamage;
         return caster;
+    }
+
+    private ContactDamageComponent contactDamage() {
+        ContactDamageComponent contact = engine.createComponent(ContactDamageComponent.class);
+        contact.damage = CONTACT_DAMAGE;
+        contact.delay  = CONTACT_DELAY;
+        return contact;
     }
 
     /** Builds a wander AI that starts in a random direction, or standing still. */

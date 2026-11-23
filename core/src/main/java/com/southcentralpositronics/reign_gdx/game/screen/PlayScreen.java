@@ -38,6 +38,10 @@ import com.southcentralpositronics.reign_gdx.game.ui.Hud;
  * <p>Escape, or the window losing focus, pauses the run. While paused, no ticks
  * run, and the pause screen draws over the frozen play screen with Resume and
  * Main menu buttons.
+ *
+ * <p>When the player dies, the screen records the score with the game's high
+ * score store at once, keeps the world running for {@link #GAME_OVER_DELAY}
+ * seconds so the death shows, and then switches to the game-over screen.
  */
 public class PlayScreen extends ScreenAdapter {
     /** The width and height of a mob's collision box, in pixels. */
@@ -45,6 +49,14 @@ public class PlayScreen extends ScreenAdapter {
     private static final int     HITBOX_HEIGHT = 8;
     /** The tint drawn over the play screen while paused. */
     private static final Color   PAUSE_DIM     = new Color(0, 0, 0, 0.6f);
+    /** The seconds between the player's death and the game-over screen. */
+    private static final float   GAME_OVER_DELAY = 2f;
+
+    private final Game               game;
+    /** How the run ended, or null while it runs. */
+    private       RunResult          result;
+    /** The seconds left before the game-over screen, once the run has ended. */
+    private       float              gameOverSecondsLeft = GAME_OVER_DELAY;
 
     private final FixedTimestep      timestep = new FixedTimestep();
     private final Vector2            aim      = new Vector2();
@@ -77,6 +89,7 @@ public class PlayScreen extends ScreenAdapter {
      * @param seed The random seed for the run.
      */
     public PlayScreen(Game game, long seed) {
+        this.game     = game;
         batch         = game.getBatch();
         shapeRenderer = new ShapeRenderer();
         // The world is always VIEWPORT_HEIGHT pixels tall; its width follows the
@@ -169,6 +182,7 @@ public class PlayScreen extends ScreenAdapter {
         for (int ticks = timestep.advance(delta); ticks > 0; ticks--) simulation.tick();
         // Nothing listens to events yet; drain them so they don't pile up.
         simulation.drainEvents();
+        if (simulation.isRunOver()) countDownToGameOver(delta);
         hud.update(delta);
         viewport.apply();
 
@@ -205,6 +219,21 @@ public class PlayScreen extends ScreenAdapter {
             pauseStage.getViewport().apply();
             pauseStage.draw();
         }
+    }
+
+    /**
+     * Records the ended run's score on the first frame after the death, and
+     * shows the game-over screen once {@link #GAME_OVER_DELAY} seconds of
+     * unpaused time have passed.
+     */
+    private void countDownToGameOver(float delta) {
+        if (result == null) {
+            long score = simulation.getScore();
+            result = new RunResult(score, simulation.getWave(), game.getHighScores().submit(score));
+        }
+        if (isPaused() || gameOverSecondsLeft <= 0) return;
+        gameOverSecondsLeft -= delta;
+        if (gameOverSecondsLeft <= 0) game.showGameOver(result);
     }
 
     /**

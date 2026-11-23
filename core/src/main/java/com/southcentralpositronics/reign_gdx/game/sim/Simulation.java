@@ -26,8 +26,10 @@ import com.southcentralpositronics.reign_gdx.game.entity.component.PlayerCompone
 import com.southcentralpositronics.reign_gdx.game.entity.system.AStarAiSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.CastingSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.ChaseAiSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.ContactDamageSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.DeathSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.MobAnimationSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.PlayerDeathSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.PlayerInputSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.ShooterAiSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.SpellSystem;
@@ -59,9 +61,6 @@ import java.util.List;
  * sets.
  */
 public final class Simulation {
-    /** The points that each kill adds to the score. */
-    public static final int POINTS_PER_KILL = 100;
-
     private final Engine                 engine = new Engine();
     private final EventLog               events = new EventLog();
     private final RunState               run    = new RunState();
@@ -96,6 +95,8 @@ public final class Simulation {
         engine.addSystem(new SeparationSystem(level, Families.MOBS));
         engine.addSystem(new CastingSystem(new SpellFactory(engine), events));
         engine.addSystem(new SpellSystem(level, events));
+        engine.addSystem(new ContactDamageSystem(events));
+        engine.addSystem(new PlayerDeathSystem(level, events, run));
         engine.addSystem(new DeathSystem(level, events));
         engine.addSystem(waves);
         engine.addSystem(new MobAnimationSystem());
@@ -187,12 +188,20 @@ public final class Simulation {
         return run.getBreakTicksLeft() * FixedTimestep.TICK_SECONDS;
     }
 
-    /** Gets the score: {@link #POINTS_PER_KILL} for each enemy the player has killed. */
+    /**
+     * Gets the score: the sum of the score values of the enemies the player
+     * has killed. Each enemy type has its own value, set in
+     * {@link MobFactory}.
+     */
     public long getScore() {
-        return PlayerComponent.MAPPER.get(player).kills * POINTS_PER_KILL;
+        return PlayerComponent.MAPPER.get(player).score;
     }
 
-    /** Checks whether the run is over. The player can't die yet, so nothing ends a run. */
+    /**
+     * Checks whether the run is over: the player has died. The simulation
+     * still ticks after that, but the player can't act, and no wave or break
+     * starts.
+     */
     public boolean isRunOver() {
         return run.isOver();
     }

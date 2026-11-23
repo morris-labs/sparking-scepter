@@ -102,7 +102,7 @@ class SimulationTest {
         assertEquals(0, simulation.getEnemyCount());
         assertEquals(10, count(events, SimulationEvent.Type.HIT));
         assertEquals(1, count(events, SimulationEvent.Type.ENEMY_DEATH));
-        assertEquals(Simulation.POINTS_PER_KILL, simulation.getScore());
+        assertEquals(50, simulation.getScore()); // A Dummy is worth 50 points.
     }
 
     private static long count(List<SimulationEvent> events, SimulationEvent.Type type) {
