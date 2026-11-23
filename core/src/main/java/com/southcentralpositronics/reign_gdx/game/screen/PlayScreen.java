@@ -40,8 +40,6 @@ import com.southcentralpositronics.reign_gdx.game.ui.Hud;
  * Main menu buttons.
  */
 public class PlayScreen extends ScreenAdapter {
-    /** Draws a red outline around the player's collision box. For debugging. */
-    private static final boolean DRAW_HITBOX   = false;
     /** The width and height of a mob's collision box, in pixels. */
     private static final int     HITBOX_WIDTH  = 16;
     private static final int     HITBOX_HEIGHT = 8;
@@ -57,6 +55,8 @@ public class PlayScreen extends ScreenAdapter {
     private final Keyboard           keyboard = new Keyboard();
     private final Mouse              mouse    = new Mouse();
     private final Simulation         simulation;
+    /** Outlines every mob's collision box: one of the debug tools. */
+    private final boolean            drawHitboxes;
     private final WorldRenderer      worldRenderer;
     private final Hud                hud;
     private final Stage              pauseStage;
@@ -87,7 +87,8 @@ public class PlayScreen extends ScreenAdapter {
 
         simulation    = new Simulation(Arena.fromTmx(Gdx.files.internal(Game.ARENA_PATH)), seed);
         worldRenderer = new WorldRenderer(game.getMobAtlas(), game.getTileAtlas());
-        hud           = new Hud(simulation, Game.PLAYER_NAME);
+        drawHitboxes  = game.isDebug();
+        hud           = new Hud(simulation, Game.PLAYER_NAME, game.isDebug());
 
         Skin  skin  = game.getSkin();
         Table pause = Menu.build(skin, "Paused",
@@ -196,7 +197,7 @@ public class PlayScreen extends ScreenAdapter {
         worldRenderer.render(batch, simulation);
         batch.end();
 
-        if (DRAW_HITBOX) drawPlayerHitbox(player);
+        if (drawHitboxes) drawHitboxes();
         hud.draw();
 
         if (isPaused()) {
@@ -217,18 +218,20 @@ public class PlayScreen extends ScreenAdapter {
         return new PlayerInput(moveX, moveY, aim.x, aim.y, mouse.isLeftPressed());
     }
 
-    /** Outlines the player's collision box in red. */
-    private void drawPlayerHitbox(EntityState player) {
+    /** Outlines each mob's collision box in red. */
+    private void drawHitboxes() {
         float thickness = 1.5f;
-        float hitboxX   = (float) player.x() - HITBOX_WIDTH / 2f;
-        float hitboxY   = (float) player.y() - HITBOX_HEIGHT / 2f;
-
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(Color.RED);
-        shapeRenderer.rect(hitboxX, hitboxY, thickness, HITBOX_HEIGHT);
-        shapeRenderer.rect(hitboxX + HITBOX_WIDTH - thickness, hitboxY, thickness, HITBOX_HEIGHT);
-        shapeRenderer.rect(hitboxX, hitboxY, HITBOX_WIDTH, thickness);
-        shapeRenderer.rect(hitboxX, hitboxY + HITBOX_HEIGHT - thickness, HITBOX_WIDTH, thickness);
+        for (EntityState mob : simulation.getEntities()) {
+            if (!mob.kind().isMob()) continue;
+            float hitboxX = (float) mob.x() - HITBOX_WIDTH / 2f;
+            float hitboxY = (float) mob.y() - HITBOX_HEIGHT / 2f;
+            shapeRenderer.rect(hitboxX, hitboxY, thickness, HITBOX_HEIGHT);
+            shapeRenderer.rect(hitboxX + HITBOX_WIDTH - thickness, hitboxY, thickness, HITBOX_HEIGHT);
+            shapeRenderer.rect(hitboxX, hitboxY, HITBOX_WIDTH, thickness);
+            shapeRenderer.rect(hitboxX, hitboxY + HITBOX_HEIGHT - thickness, HITBOX_WIDTH, thickness);
+        }
         shapeRenderer.end();
     }
 

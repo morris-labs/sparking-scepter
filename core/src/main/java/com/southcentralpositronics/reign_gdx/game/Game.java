@@ -24,6 +24,14 @@ public class Game extends com.badlogic.gdx.Game {
     public static final String PLAYER_NAME     = "King Steve";
     /** The arena that every run plays: the Java2D spawn level, converted to a Tiled TMX file. */
     public static final String ARENA_PATH      = "levels/SpawnLevel.tmx";
+    /**
+     * The system property that turns on the debug tools: the Add Mobs and
+     * Clear Mobs buttons and the hitbox outlines. They're off unless it's
+     * {@code true}; {@code ./gradlew lwjgl3:run -Pdebug} sets it.
+     */
+    public static final String DEBUG_PROPERTY  = "reign.debug";
+
+    private final boolean debug = Boolean.getBoolean(DEBUG_PROPERTY);
 
     private SpriteBatch  batch;
     private TextureAtlas mobAtlas, tileAtlas;
@@ -58,6 +66,11 @@ public class Game extends com.badlogic.gdx.Game {
             setScreen(next);
             if (previous != null) previous.dispose();
         });
+    }
+
+    /** Checks whether the debug tools are on, as {@link #DEBUG_PROPERTY} sets. */
+    public boolean isDebug() {
+        return debug;
     }
 
     /** Gets the sprite batch that the screens draw with. */
