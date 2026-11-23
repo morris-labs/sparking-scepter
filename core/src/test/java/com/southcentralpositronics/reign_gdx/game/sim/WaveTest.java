@@ -75,6 +75,47 @@ class WaveTest {
     }
 
     @Test
+    void enemiesEnterOnlyAtSpawnPointsAwayFromThePlayer() {
+        for (long seed = 1; seed <= 5; seed++) {
+            // The left spawn point is 2 tiles from the player; the right one is 8.
+            Simulation simulation = new Simulation(TestArenas.parse(
+                "#############",
+                "#S.P.......S#",
+                "#############"), seed);
+            tick(simulation, 180, new ArrayList<>());
+
+            assertEquals(1, simulation.getWave());
+            assertTrue(simulation.getEnemyCount() > 0);
+            assertAllEnemiesOnTile(simulation, 11, 1);
+        }
+    }
+
+    @Test
+    void enemiesEnterAtTheFarthestSpawnPointWhenNoneIsFarEnough() {
+        for (long seed = 1; seed <= 5; seed++) {
+            // The left spawn point is 3 tiles from the player and the right one 2; both are too close.
+            Simulation simulation = new Simulation(TestArenas.parse(
+                "########",
+                "#S..P.S#",
+                "########"), seed);
+            tick(simulation, 180, new ArrayList<>());
+
+            assertEquals(1, simulation.getWave());
+            assertTrue(simulation.getEnemyCount() > 0);
+            assertAllEnemiesOnTile(simulation, 1, 1);
+        }
+    }
+
+    /** Checks that every enemy stands where a mob placed on the tile does: separation hasn't moved them yet. */
+    private static void assertAllEnemiesOnTile(Simulation simulation, int tx, int ty) {
+        for (EntityState enemy : simulation.getEntities()) {
+            if (!enemy.kind().isEnemy()) continue;
+            assertEquals(tx * 16 + 8, enemy.x(), 1e-9);
+            assertEquals(ty * 16 + 4, enemy.y(), 1e-9);
+        }
+    }
+
+    @Test
     void theSameSeedSendsTheSameWaveAndItMovesTheSameWay() {
         assertEquals(enemiesTwoSecondsIntoWaveOne(SEED), enemiesTwoSecondsIntoWaveOne(SEED));
     }
