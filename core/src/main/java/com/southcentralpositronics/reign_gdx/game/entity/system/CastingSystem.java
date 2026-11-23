@@ -22,6 +22,13 @@ public final class CastingSystem extends IteratingSystem {
     private final EventLog     events;
 
     /**
+     * The cooldown, in seconds, that counts as over. It absorbs float error, so
+     * a delay of a whole number of ticks, such as 0.1 s, lasts exactly 6 ticks
+     * instead of 7.
+     */
+    static final float COOLDOWN_EPSILON = 1e-5f;
+
+    /**
      * Creates the system.
      *
      * @param spells The factory that adds each spell.
@@ -37,8 +44,8 @@ public final class CastingSystem extends IteratingSystem {
     @Override
     protected void processEntity(Entity entity, float deltaTime) {
         CasterComponent caster = CasterComponent.MAPPER.get(entity);
-        if (caster.cooldown > 0f) caster.cooldown -= deltaTime;
-        if (!caster.casting || caster.cooldown > 0f) return;
+        if (caster.cooldown > COOLDOWN_EPSILON) caster.cooldown -= deltaTime;
+        if (!caster.casting || caster.cooldown > COOLDOWN_EPSILON) return;
 
         MobComponent      mob      = MobComponent.MAPPER.get(entity);
         PositionComponent position = PositionComponent.MAPPER.get(entity);

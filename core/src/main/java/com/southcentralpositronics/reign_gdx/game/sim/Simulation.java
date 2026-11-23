@@ -142,6 +142,11 @@ public final class Simulation {
         return mobState(player);
     }
 
+    /** Gets the most health the player can have: 1 at the start of a run, more with upgrades. */
+    public double getPlayerMaxHealth() {
+        return HealthComponent.MAPPER.get(player).max;
+    }
+
     /**
      * Gets a snapshot of every entity, in drawing order: particles, spells,
      * enemies, then the player.
