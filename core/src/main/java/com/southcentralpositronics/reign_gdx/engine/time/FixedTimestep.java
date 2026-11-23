@@ -7,6 +7,9 @@ package com.southcentralpositronics.reign_gdx.engine.time;
  * simulation that many ticks. Time left over carries into the next frame, so
  * the simulation runs {@link #TICKS_PER_SECOND} ticks per second at any frame
  * rate.
+ *
+ * <p>While paused, {@link #advance(float)} runs no ticks and drops the frame
+ * time, so the simulation picks up where it left off when it resumes.
  */
 public final class FixedTimestep {
     /** The number of ticks in one second of play. */
@@ -22,7 +25,8 @@ public final class FixedTimestep {
     /** Absorbs rounding error, so frames that add up to a whole tick run it. */
     private static final double EPSILON_TICKS    = 1e-6;
 
-    private double accumulatedTicks;
+    private double  accumulatedTicks;
+    private boolean paused;
 
     /**
      * Converts a rate per second to the amount per tick.
@@ -38,13 +42,29 @@ public final class FixedTimestep {
      * Adds a frame's time and returns the number of ticks to run for it.
      *
      * @param frameSeconds The time since the last frame, in seconds.
-     * @return The number of whole ticks that are due.
+     * @return The number of whole ticks that are due, or 0 while paused.
      */
     public int advance(float frameSeconds) {
+        if (paused) return 0;
         float clamped = Math.max(0f, Math.min(frameSeconds, MAX_FRAME_SECONDS));
         accumulatedTicks += clamped * (double) TICKS_PER_SECOND;
         int ticks = (int) Math.floor(accumulatedTicks + EPSILON_TICKS);
         accumulatedTicks = Math.max(0, accumulatedTicks - ticks);
         return ticks;
+    }
+
+    /** Stops ticks until {@link #resume()}. Time that passes while paused is dropped. */
+    public void pause() {
+        paused = true;
+    }
+
+    /** Runs ticks again, starting from the part tick carried before the pause. */
+    public void resume() {
+        paused = false;
+    }
+
+    /** Returns whether the timestep is paused. */
+    public boolean isPaused() {
+        return paused;
     }
 }
