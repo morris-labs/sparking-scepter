@@ -1,7 +1,6 @@
 package com.southcentralpositronics.reign_gdx.engine.level;
 
 import com.badlogic.ashley.core.Engine;
-import com.badlogic.gdx.files.FileHandle;
 import com.southcentralpositronics.reign_gdx.engine.entity.ParticleEmitter;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
@@ -41,14 +40,6 @@ public class Level {
         this.random          = new Random(seed);
         this.particleEmitter = new ParticleEmitter(engine, new Random(seed));
         engine.addSystem(particleEmitter);
-    }
-
-    /**
-     * Loads terrain from a level PNG file, without creating textures or a
-     * window. Its particles go to an engine that nothing updates.
-     */
-    public Level(FileHandle image) {
-        this(Arena.fromPng(image), 0L, new Engine());
     }
 
     /** Gets the emitter that bursts particles into the level's Ashley engine. */

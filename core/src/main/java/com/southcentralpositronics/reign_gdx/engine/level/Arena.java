@@ -1,9 +1,6 @@
 package com.southcentralpositronics.reign_gdx.engine.level;
 
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.southcentralpositronics.reign_gdx.engine.graphics.TileLoader;
-import com.southcentralpositronics.reign_gdx.engine.graphics.TileMapBuilder;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
 
@@ -59,25 +56,6 @@ public final class Arena {
     }
 
     /**
-     * Loads an arena from a level PNG file, one pixel per tile. A PNG file has no
-     * player start.
-     *
-     * <p>This method needs the libGDX native library but no window or OpenGL
-     * context.
-     *
-     * @param image The level PNG file.
-     * @return The arena.
-     */
-    public static Arena fromPng(FileHandle image) {
-        Pixmap colorMap = new Pixmap(image);
-        try {
-            return new Arena(TileMapBuilder.buildTileGrid(colorMap, TileLoader.loadTiles()), null);
-        } finally {
-            colorMap.dispose();
-        }
-    }
-
-    /**
      * Loads an arena from a Tiled TMX file, with no window, OpenGL context, or
      * textures.
      *
@@ -93,6 +71,9 @@ public final class Arena {
      *
      * @param tmxFile The TMX file. Tilesets and images resolve relative to it.
      * @return The arena.
+     * @throws InvalidArenaException If the file can't be read, or it lacks a
+     *                               player start, spawn points, or tile
+     *                               properties.
      */
     public static Arena fromTmx(FileHandle tmxFile) {
         return TmxArenaReader.read(tmxFile);
