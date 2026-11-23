@@ -2,8 +2,8 @@
 
 Reign is a top-down 2D action game written in Java on [libGDX](https://libgdx.com/)
 1.13.1. You play a king who fights waves of enemies with fireballs. It ports an
-earlier Java2D version of the game to libGDX, and it includes a map editor that
-paints level PNG files.
+earlier Java2D version of the game to libGDX. Arenas are built in the
+[Tiled](https://www.mapeditor.org/) map editor.
 
 ## Requirements
 
@@ -20,13 +20,6 @@ To build and start the game, run the following from the repository root:
 
 ```
 
-To start the map editor:
-
-```bash
-./gradlew lwjgl3:runEditor
-
-```
-
 ## Run the tests
 
 From the repository root, run the JUnit 5 tests without a window:
@@ -38,9 +31,9 @@ From the repository root, run the JUnit 5 tests without a window:
 
 The tests drive the game through the `Simulation` class, with no window,
 OpenGL context, or audio: they build a small arena, feed player input, run
-fixed ticks, and check what happens. A level smoke test also loads a PNG
-fixture and checks tile types, collision flags, image orientation, and the
-fallback for an unknown color.
+fixed ticks, and check what happens. Arena tests load TMX files the same way
+the game does, including the small test arena in
+`core/src/test/arenas/test-arena.tmx` and the shipped spawn level.
 
 ## Controls
 
@@ -55,23 +48,44 @@ to close the game.
 - **Add Mobs** and **Clear Mobs**: spawn a wave or remove every enemy. A new
   wave spawns when every enemy is dead, unless you clicked **Clear Mobs**.
 
-## Levels
+## Arenas
 
-Each pixel in a level PNG file is one 16x16 tile. The following colors map to
-tile types:
+An arena is a Tiled TMX file in `assets/levels/` (see
+`docs/adr/0001-tiled-for-levels.md`). The game plays
+`assets/levels/SpawnLevel.tmx`, the Java2D spawn level converted to TMX. To
+play another arena, change `ARENA_PATH` in the `Game` class.
+`assets/levels/TestMap.tmx` is the earlier 64x64 test map, converted too, and
+the game doesn't load it.
 
-| Color (ARGB) | Tile | Blocks movement |
-|---|---|---|
-| `0xFF125B0A` | Grass | No |
-| `0xFF434343` | Floor | No |
-| `0xFFC4DBFF` | Water | No |
-| `0xFF004B00` | Hedge | Yes |
-| `0xFF665C09` | Wall | Yes |
-| `0xFF6C3279` | Alternate wall | Yes |
-| `0xFF280A2B` | Void | Yes |
+To build an arena in Tiled 1.10 or later:
 
-Any other color becomes void. The game loads `assets/levels/TestMap.png`; to
-load another level, change `MAP_PATH` in the `Game` class.
+1. Create an orthogonal map with 16x16 px tiles, in `assets/levels/`.
+1. Add the shared tileset, `assets/levels/tiles.tsx`, to the map.
+1. Paint the tiles on one or more tile layers. Where layers overlap, the
+   highest layer wins; a cell that no layer fills is void.
+1. Add an object layer, and in it place one point object with the class
+   `PlayerStart` and at least one point object with the class `SpawnPoint`.
+   An object's name works in place of its class. Each object marks the tile
+   under it, which must not block movement.
+
+Each tile in the tileset has three custom properties, which the game reads
+instead of the tile images:
+
+| Tile | `tileType` | `blocksMovement` | `blocksSpells` |
+|---|---|---|---|
+| Grass | `grass` | No | No |
+| Floor | `floor` | No | No |
+| Water | `water` | Yes | No |
+| Hedge | `hedge` | Yes | Yes |
+| Wall | `wall` | Yes | Yes |
+| Alternate wall | `wall_alt` | Yes | Yes |
+| Void | `void_tile` | Yes | Yes |
+
+A new tile type needs only a tileset entry and a sprite of the same name in
+the tile atlas, plus a value in the `Tile.tileType` enum. If an arena has no
+player start, no spawn points, an object on a blocking tile, or a tile without
+a `tileType`, loading it fails with an error that names the file and the
+problem.
 
 ## How the game runs
 
@@ -95,15 +109,16 @@ from an engine pathfinding service that the A* AI system calls.
 - `core/src/main/java/com/southcentralpositronics/reign_gdx/engine/`: arenas,
   terrain, collision, pathfinding, entities, Ashley components and systems,
   particles, input, the fixed
-  timestep, rendering helpers, and the file chooser widget. Engine packages have no dependency on game packages.
+  timestep, Tiled arena loading, and rendering helpers. Engine packages have
+  no dependency on game packages.
 - `core/src/main/java/com/southcentralpositronics/reign_gdx/game/`: Reign's
   application, main menu and play screens, simulation, renderer, mob and
   spell factories, Reign's components and systems (enemy AI, casting, spells,
-  death, and waves), HUD, minimap, and map editor.
-- `core/src/test/`: JUnit 5 tests and PNG fixtures.
+  death, and waves), HUD, and minimap.
+- `core/src/test/`: JUnit 5 tests and the test arena.
 - `lwjgl3/`: the desktop launchers.
-- `assets/`: atlases, levels, sprites, and UI skins. Both run tasks use this
-  folder as the working directory.
+- `assets/`: atlases, arenas and their tileset, sprites, and UI skins. The
+  run task uses this folder as the working directory.
 
 ## License
 

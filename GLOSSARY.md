@@ -44,7 +44,8 @@ The place in an arena where the player appears when a run begins.
 _Avoid_: spawn (for the player)
 
 **Tile**:
-One 16x16 cell of a level. A tile is either solid or walkable.
+One 16x16 cell of a level. Each tile type sets whether it blocks movement and
+whether it blocks spells: water blocks movement only, and walls block both.
 _Avoid_: block, cell
 
 ## Entities
