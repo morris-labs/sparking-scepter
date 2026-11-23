@@ -59,8 +59,10 @@ import java.util.List;
  * <p>The simulation owns an Ashley engine (ADR 0002) and updates it once per
  * tick. Every entity is an Ashley entity, and every rule is a system, run in
  * the order that
+ * {@link com.southcentralpositronics.reign_gdx.game.entity.system.GamePriority}
+ * and the engine's
  * {@link com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority}
- * sets.
+ * set together.
  */
 public final class Simulation {
     private final Engine                 engine = new Engine();

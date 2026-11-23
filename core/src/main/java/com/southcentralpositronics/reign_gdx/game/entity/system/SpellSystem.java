@@ -7,7 +7,6 @@ import com.badlogic.ashley.utils.ImmutableArray;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.HealthComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
 import com.southcentralpositronics.reign_gdx.game.entity.Families;
@@ -47,7 +46,7 @@ public final class SpellSystem extends IteratingSystem {
      * @param events The log that receives hit events.
      */
     public SpellSystem(Level level, EventLog events) {
-        super(Families.SPELLS, SystemPriority.SPELLS);
+        super(Families.SPELLS, GamePriority.SPELLS);
         this.level  = level;
         this.events = events;
     }

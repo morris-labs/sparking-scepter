@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Entity;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.HealthComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.game.entity.Families;
 import com.southcentralpositronics.reign_gdx.game.entity.component.EnemyComponent;
@@ -39,7 +38,7 @@ public final class DeathSystem extends PlayerAwareSystem {
      * @param events The log that receives death events.
      */
     public DeathSystem(Level level, EventLog events) {
-        super(Families.ENEMIES, SystemPriority.DEATH);
+        super(Families.ENEMIES, GamePriority.DEATH);
         this.level  = level;
         this.events = events;
     }

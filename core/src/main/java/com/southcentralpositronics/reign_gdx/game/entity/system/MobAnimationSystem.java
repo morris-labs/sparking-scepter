@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.systems.IteratingSystem;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.VelocityComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.game.entity.component.MobComponent;
 import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
 import com.southcentralpositronics.reign_gdx.game.sim.Facing;
@@ -22,7 +21,7 @@ import com.southcentralpositronics.reign_gdx.game.sim.Facing;
  */
 public final class MobAnimationSystem extends IteratingSystem {
     public MobAnimationSystem() {
-        super(Family.all(MobComponent.class, VelocityComponent.class).get(), SystemPriority.ANIMATION);
+        super(Family.all(MobComponent.class, VelocityComponent.class).get(), GamePriority.ANIMATION);
     }
 
     @Override

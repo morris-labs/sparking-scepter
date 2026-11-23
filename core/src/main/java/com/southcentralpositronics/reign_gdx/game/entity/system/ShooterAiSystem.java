@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.game.entity.component.CasterComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.MobComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.ShooterAiComponent;
@@ -13,7 +12,7 @@ import com.southcentralpositronics.reign_gdx.game.entity.component.ShooterAiComp
 public final class ShooterAiSystem extends PlayerAwareSystem {
     public ShooterAiSystem() {
         super(Family.all(ShooterAiComponent.class, CasterComponent.class, PositionComponent.class).get(),
-              SystemPriority.AI);
+              GamePriority.AI);
     }
 
     @Override

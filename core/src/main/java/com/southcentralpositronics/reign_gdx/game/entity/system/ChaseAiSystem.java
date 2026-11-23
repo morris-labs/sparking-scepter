@@ -4,7 +4,6 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.VelocityComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.game.entity.component.ChaseAiComponent;
 
 /**
@@ -14,7 +13,7 @@ import com.southcentralpositronics.reign_gdx.game.entity.component.ChaseAiCompon
 public final class ChaseAiSystem extends PlayerAwareSystem {
     public ChaseAiSystem() {
         super(Family.all(ChaseAiComponent.class, PositionComponent.class, VelocityComponent.class).get(),
-              SystemPriority.AI);
+              GamePriority.AI);
     }
 
     @Override

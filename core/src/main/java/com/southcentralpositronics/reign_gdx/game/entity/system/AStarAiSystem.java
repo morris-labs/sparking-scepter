@@ -5,7 +5,6 @@ import com.badlogic.ashley.core.Family;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.BodyComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.VelocityComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.pathfinding.AStarPathfinder;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
@@ -26,7 +25,7 @@ public final class AStarAiSystem extends PlayerAwareSystem {
      */
     public AStarAiSystem(AStarPathfinder pathfinder) {
         super(Family.all(AStarAiComponent.class, PositionComponent.class, BodyComponent.class,
-                         VelocityComponent.class).get(), SystemPriority.AI);
+                         VelocityComponent.class).get(), GamePriority.AI);
         this.pathfinder = pathfinder;
     }
 

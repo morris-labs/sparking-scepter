@@ -5,7 +5,6 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.EntitySystem;
 import com.badlogic.ashley.utils.ImmutableArray;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
-import com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
@@ -61,7 +60,7 @@ public final class WaveSystem extends EntitySystem {
      * @param upgrades The run's upgrades, offered at the start of each break after a cleared wave.
      */
     public WaveSystem(Level level, MobFactory mobs, EventLog events, RunState run, UpgradeChoice upgrades) {
-        super(SystemPriority.WAVES);
+        super(GamePriority.WAVES);
         this.level  = level;
         this.mobs   = mobs;
         this.events = events;
