@@ -111,20 +111,20 @@ class TiledArenaTest {
     void tilePropertiesSetWhatBlocksMovementAndSpells() {
         Simulation simulation = new Simulation(testArena(), SEED);
 
-        assertBlocks(simulation, 0, 0, Tile.tileType.wall, true, true);
-        assertBlocks(simulation, 1, 1, Tile.tileType.hedge, true, true);
-        assertBlocks(simulation, 2, 1, Tile.tileType.wall_alt, true, true);
-        assertBlocks(simulation, 3, 1, Tile.tileType.floor, false, false);
-        assertBlocks(simulation, 4, 1, Tile.tileType.void_tile, true, true);
-        assertBlocks(simulation, 5, 6, Tile.tileType.water, true, false);
-        assertBlocks(simulation, 1, 2, Tile.tileType.grass, false, false);
+        assertBlocks(simulation, 0, 0, Tile.TileType.wall, true, true);
+        assertBlocks(simulation, 1, 1, Tile.TileType.hedge, true, true);
+        assertBlocks(simulation, 2, 1, Tile.TileType.wall_alt, true, true);
+        assertBlocks(simulation, 3, 1, Tile.TileType.floor, false, false);
+        assertBlocks(simulation, 4, 1, Tile.TileType.void_tile, true, true);
+        assertBlocks(simulation, 5, 6, Tile.TileType.water, true, false);
+        assertBlocks(simulation, 1, 2, Tile.TileType.grass, false, false);
     }
 
-    private static void assertBlocks(Simulation simulation, int tx, int ty, Tile.tileType type,
+    private static void assertBlocks(Simulation simulation, int tx, int ty, Tile.TileType type,
                                      boolean blocksMovement, boolean blocksSpells) {
         Tile tile = simulation.getTileAt(tx, ty);
-        assertEquals(type, tile.tile_Type, "Tile type at (" + tx + ", " + ty + ")");
-        assertEquals(blocksMovement, tile.isSolid(), type + " blocks movement");
+        assertEquals(type, tile.type, "Tile type at (" + tx + ", " + ty + ")");
+        assertEquals(blocksMovement, tile.blocksMovement(), type + " blocks movement");
         assertEquals(blocksSpells, tile.blocksSpells(), type + " blocks spells");
     }
 

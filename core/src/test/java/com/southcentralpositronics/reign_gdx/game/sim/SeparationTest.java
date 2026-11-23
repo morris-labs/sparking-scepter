@@ -54,7 +54,7 @@ class SeparationTest {
         for (double[] corner : corners) {
             int tx = (int) Math.floor(corner[0] / 16);
             int ty = (int) Math.floor(corner[1] / 16);
-            if (simulation.getTileAt(tx, ty).isSolid()) return true;
+            if (simulation.getTileAt(tx, ty).blocksMovement()) return true;
         }
         return false;
     }

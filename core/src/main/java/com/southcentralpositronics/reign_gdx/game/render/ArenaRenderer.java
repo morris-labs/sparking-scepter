@@ -29,7 +29,7 @@ public final class ArenaRenderer implements Disposable {
     /** The atlas region prefix of the enemy sprite, ported from the Java2D dummy sheet. */
     private static final String ENEMY_SPRITE  = "King_Berno";
 
-    private final Map<Tile.tileType, TextureRegion> tileRegions = new EnumMap<>(Tile.tileType.class);
+    private final Map<Tile.TileType, TextureRegion> tileRegions = new EnumMap<>(Tile.TileType.class);
     private final Map<Facing, AnimatedSprite>       playerWalk;
     private final Map<Facing, AnimatedSprite>       enemyWalk;
     private final TextureRegion                     spell;
@@ -46,10 +46,10 @@ public final class ArenaRenderer implements Disposable {
      *
      * @param mobAtlas  The atlas that holds the walking animations.
      * @param tileAtlas The atlas that holds the tiles and the fireball. Each
-     *                  tile region is named after its {@link Tile.tileType}.
+     *                  tile region is named after its {@link Tile.TileType}.
      */
     public ArenaRenderer(TextureAtlas mobAtlas, TextureAtlas tileAtlas) {
-        for (Tile.tileType type : Tile.tileType.values()) tileRegions.put(type, tileAtlas.findRegion(type.name()));
+        for (Tile.TileType type : Tile.TileType.values()) tileRegions.put(type, tileAtlas.findRegion(type.name()));
         playerWalk = loadWalk(mobAtlas, PLAYER_SPRITE);
         enemyWalk  = loadWalk(mobAtlas, ENEMY_SPRITE);
         spell      = tileAtlas.findRegion("fireball");
@@ -93,7 +93,7 @@ public final class ArenaRenderer implements Disposable {
             for (int y = 0; y < simulation.getHeight(); y++) {
                 Tile tile = simulation.getTileAt(x, y);
                 if (tile == null) continue;
-                TextureRegion region = tileRegions.get(tile.tile_Type);
+                TextureRegion region = tileRegions.get(tile.type);
                 if (region != null) batch.draw(region, x * Tile.SIZE, y * Tile.SIZE, Tile.SIZE, Tile.SIZE);
             }
         }

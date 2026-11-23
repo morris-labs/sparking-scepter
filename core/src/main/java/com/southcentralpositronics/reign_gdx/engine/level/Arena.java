@@ -13,7 +13,7 @@ import java.util.Optional;
  * holds no entities and no textures.
  */
 public final class Arena {
-    /** The tile property that names the tile type, one of {@link Tile.tileType}. */
+    /** The tile property that names the tile type, one of {@link Tile.TileType}. */
     public static final String TILE_TYPE       = "tileType";
     /** The boolean tile property that stops mobs from walking onto the tile. */
     public static final String BLOCKS_MOVEMENT = "blocksMovement";

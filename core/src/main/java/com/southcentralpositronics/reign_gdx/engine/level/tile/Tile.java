@@ -6,7 +6,7 @@ package com.southcentralpositronics.reign_gdx.engine.level.tile;
  *
  * <p>The two blocking flags are separate so that a tile such as water can stop
  * mobs but let spells fly over it. Mob movement, mob separation, and A* paths
- * read {@link #isSolid()}; spell flight and particles read
+ * read {@link #blocksMovement()}; spell flight and particles read
  * {@link #blocksSpells()}.
  */
 public class Tile {
@@ -14,36 +14,37 @@ public class Tile {
     public static final int SIZE = 16;
 
     public int x, y;
-    public boolean       isSolid      = true;
-    public boolean       blocksSpells = true;
-    public tileType      tile_Type    = tileType.void_tile;
+    /** The type, which picks the tile's image. */
+    public final  TileType type;
+    private final boolean  blocksMovement;
+    private final boolean  blocksSpells;
 
     /**
      * Creates a tile that blocks movement and spells alike, or neither.
      *
-     * @param tileType The type, which picks the tile's image.
-     * @param isSolid  Whether the tile blocks both movement and spells.
+     * @param type   The type, which picks the tile's image.
+     * @param blocks Whether the tile blocks both movement and spells.
      */
-    public Tile(tileType tileType, boolean isSolid) {
-        this(tileType, isSolid, isSolid);
+    public Tile(TileType type, boolean blocks) {
+        this(type, blocks, blocks);
     }
 
     /**
      * Creates a tile.
      *
-     * @param tileType       The type, which picks the tile's image.
+     * @param type           The type, which picks the tile's image.
      * @param blocksMovement Whether mobs can't walk onto the tile.
      * @param blocksSpells   Whether spells stop when they reach the tile.
      */
-    public Tile(tileType tileType, boolean blocksMovement, boolean blocksSpells) {
-        this.tile_Type    = tileType;
-        this.isSolid      = blocksMovement;
-        this.blocksSpells = blocksSpells;
+    public Tile(TileType type, boolean blocksMovement, boolean blocksSpells) {
+        this.type           = type;
+        this.blocksMovement = blocksMovement;
+        this.blocksSpells   = blocksSpells;
     }
 
     /** Checks whether the tile blocks movement. */
-    public boolean isSolid() {
-        return isSolid;
+    public boolean blocksMovement() {
+        return blocksMovement;
     }
 
     /** Checks whether the tile stops spells. */
@@ -51,7 +52,7 @@ public class Tile {
         return blocksSpells;
     }
 
-    public enum tileType {
+    public enum TileType {
         floor, grass, hedge, wall, wall_alt, water, void_tile
     }
 

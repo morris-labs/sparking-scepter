@@ -59,7 +59,7 @@ public class Minimap extends Widget implements Disposable {
     /** Gets the RGBA8888 color for a tile: the color its type had in the old level PNG files. */
     private static int tileColor(Tile tile) {
         if (tile == null) return VOID_COLOR;
-        int argb = switch (tile.tile_Type) {
+        int argb = switch (tile.type) {
             case grass -> 0xFF125B0A;
             case hedge -> 0xFF004B00;
             case water -> 0xFFC4DBFF;
