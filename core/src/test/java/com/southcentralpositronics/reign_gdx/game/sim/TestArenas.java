@@ -16,7 +16,8 @@ import java.util.List;
  *   <li>{@code #}: wall
  *   <li>{@code H}: hedge
  *   <li>{@code ~}: water, which blocks movement but not spells
- *   <li>{@code P}: grass with the player start on it
+ *   <li>{@code P}: grass with the player start on it. A simulation needs
+ *       one, and rejects an arena without it.
  *   <li>{@code S}: grass with a spawn point on it. Spawn points list from the
  *       top row down, left to right within a row.
  * </ul>

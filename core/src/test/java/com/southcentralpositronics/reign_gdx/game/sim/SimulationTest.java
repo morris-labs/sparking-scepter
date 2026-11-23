@@ -2,6 +2,7 @@ package com.southcentralpositronics.reign_gdx.game.sim;
 
 import com.badlogic.gdx.Gdx;
 import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
+import com.southcentralpositronics.reign_gdx.engine.level.InvalidArenaException;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SimulationTest {
@@ -43,6 +45,16 @@ class SimulationTest {
 
         // The wall's right edge is at x = 16, and the collision box is 16 px wide.
         assertEquals(16 + 8, simulation.getPlayer().x(), 1e-9);
+    }
+
+    @Test
+    void arenaWithoutAPlayerStartFailsWithAnErrorNamingIt() {
+        InvalidArenaException error = assertThrows(InvalidArenaException.class, () -> new Simulation(TestArenas.parse(
+            "#####",
+            "#...#",
+            "#####"), SEED));
+
+        assertTrue(error.getMessage().contains("player start"), error.getMessage());
     }
 
     @Test

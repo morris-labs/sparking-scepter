@@ -32,8 +32,8 @@ public final class Arena {
      * Creates an arena from a tile grid, with no spawn points.
      *
      * @param tiles       The tiles, indexed {@code [x][y]} with y up.
-     * @param playerStart The tile where the player appears, or null to let the
-     *                    simulation pick a random open tile.
+     * @param playerStart The tile where the player appears. A simulation
+     *                    rejects an arena whose player start is null.
      */
     public Arena(Tile[][] tiles, Vector2i playerStart) {
         this(tiles, playerStart, List.of());
@@ -43,8 +43,8 @@ public final class Arena {
      * Creates an arena from a tile grid.
      *
      * @param tiles       The tiles, indexed {@code [x][y]} with y up.
-     * @param playerStart The tile where the player appears, or null to let the
-     *                    simulation pick a random open tile.
+     * @param playerStart The tile where the player appears. A simulation
+     *                    rejects an arena whose player start is null.
      * @param spawnPoints The tiles where enemies enter, in the order the arena
      *                    lists them.
      */

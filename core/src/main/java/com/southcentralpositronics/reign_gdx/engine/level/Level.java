@@ -130,21 +130,4 @@ public class Level {
     public Random getRandom() {
         return random;
     }
-
-    /**
-     * Picks a random open tile away from the map edge. After {@code width *
-     * height} misses, it gives up and returns tile (0, 0).
-     *
-     * @return The tile's column and row.
-     */
-    public Vector2i getRandomNonSolidTile() {
-        int maxTries = width * height;
-        for (int tries = 0; tries < maxTries && width > 2 && height > 2; tries++) {
-            int  x = 1 + random.nextInt(width - 2);
-            int  y = 1 + random.nextInt(height - 2);
-            Tile t = tiles[x][y];
-            if (t != null && !t.blocksMovement()) return new Vector2i(x, y);
-        }
-        return new Vector2i(0, 0);
-    }
 }

@@ -12,6 +12,7 @@ import com.southcentralpositronics.reign_gdx.engine.entity.system.SeparationSyst
 import com.southcentralpositronics.reign_gdx.engine.entity.system.ParticleSystem;
 import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
 import com.southcentralpositronics.reign_gdx.engine.level.Arena;
+import com.southcentralpositronics.reign_gdx.engine.level.InvalidArenaException;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.pathfinding.AStarPathfinder;
@@ -50,8 +51,8 @@ import java.util.List;
  * {@link #getEntities()}, and passes {@link #drainEvents()} to audio and the
  * HUD. Tests drive it the same way, with no window.
  *
- * <p>The seed makes every random choice in the rules repeatable: the player's
- * start when the arena has none, where enemies spawn, and how they wander.
+ * <p>The seed makes every random choice in the rules repeatable: where
+ * enemies spawn, how they wander, and which upgrades a break offers.
  * Particles draw from a separate random source with the same seed, so they
  * never change the rules' choices.
  *
@@ -81,11 +82,13 @@ public final class Simulation {
      * Creates a simulation and opens the run with the break before the first
      * wave.
      *
-     * @param arena The arena to play. The player appears at its player start,
-     *              or on a random open tile if it has none.
+     * @param arena The arena to play. The player appears at its player start.
      * @param seed  The seed for every random choice in the rules.
+     * @throws InvalidArenaException If the arena has no player start.
      */
     public Simulation(Arena arena, long seed) {
+        Vector2i start = arena.getPlayerStart().orElseThrow(
+            () -> new InvalidArenaException("The arena has no player start; give it one where the player appears"));
         level = new Level(arena, seed, engine);
         mobs  = new MobFactory(engine, level.getRandom());
         upgrades = new UpgradeChoice(level.getRandom());
@@ -112,7 +115,6 @@ public final class Simulation {
         spells    = engine.getEntitiesFor(Families.SPELLS);
         enemies   = engine.getEntitiesFor(Families.ENEMIES);
 
-        Vector2i start = arena.getPlayerStart().orElseGet(level::getRandomNonSolidTile);
         player = mobs.createPlayer(start.x, start.y);
         waves.startRun();
     }
