@@ -14,10 +14,11 @@ import com.southcentralpositronics.reign_gdx.game.sim.Facing;
  * this tick, whether or not a wall stopped it. A mob that stands still keeps
  * its facing and restarts its animation.
  *
- * <p>Known issue 13 is kept on purpose: in libGDX's y-up world, moving up
- * faces {@link Facing#DOWN} and moving down faces {@link Facing#UP}. The player
- * faces up or down whenever it moves along y; an enemy faces along the axis it
- * moves faster on, and sideways on a tie.
+ * <p>In libGDX's y-up world, a positive y velocity faces {@link Facing#UP}
+ * and a negative one faces {@link Facing#DOWN}. The player faces up or down
+ * whenever it moves along y; an enemy faces along the axis it moves faster on,
+ * and sideways on a tie. Separation pushes don't change facing, since they
+ * don't change the velocity a mob asked for.
  */
 public final class MobAnimationSystem extends IteratingSystem {
     public MobAnimationSystem() {
@@ -39,13 +40,13 @@ public final class MobAnimationSystem extends IteratingSystem {
         Facing facing = current;
         if (velocity.x > 0) facing = Facing.RIGHT;
         else if (velocity.x < 0) facing = Facing.LEFT;
-        if (velocity.y > 0) facing = Facing.DOWN;
-        else if (velocity.y < 0) facing = Facing.UP;
+        if (velocity.y > 0) facing = Facing.UP;
+        else if (velocity.y < 0) facing = Facing.DOWN;
         return facing;
     }
 
     private static Facing enemyFacing(Facing current, VelocityComponent velocity) {
-        if (Math.abs(velocity.y) > Math.abs(velocity.x)) return velocity.y < 0 ? Facing.UP : Facing.DOWN;
+        if (Math.abs(velocity.y) > Math.abs(velocity.x)) return velocity.y > 0 ? Facing.UP : Facing.DOWN;
         if (velocity.x != 0) return velocity.x < 0 ? Facing.LEFT : Facing.RIGHT;
         return current;
     }
