@@ -5,6 +5,7 @@ import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
 import com.southcentralpositronics.reign_gdx.engine.level.Arena;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
+import com.southcentralpositronics.reign_gdx.game.Game;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -53,6 +54,19 @@ class TiledArenaTest {
             assertEquals(1 * 16 + 8, player.x(), 1e-9);
             assertEquals(6 * 16 + 4, player.y(), 1e-9);
         }
+    }
+
+    @Test
+    void gameArenaIsTheConvertedSpawnLevel() {
+        Arena arena = Arena.fromTmx(new FileHandle(new File("../assets/" + Game.ARENA_PATH).getAbsoluteFile()));
+        Simulation simulation = new Simulation(arena, SEED);
+
+        // The Java2D game started the player at tile (20, 42), counted from the top of the 75-row map.
+        assertEquals(40, simulation.getWidth());
+        assertEquals(75, simulation.getHeight());
+        assertEquals(20 * 16 + 8, simulation.getPlayer().x(), 1e-9);
+        assertEquals((75 - 1 - 42) * 16 + 4, simulation.getPlayer().y(), 1e-9);
+        assertEquals(6, simulation.getSpawnPoints().size());
     }
 
     @Test
