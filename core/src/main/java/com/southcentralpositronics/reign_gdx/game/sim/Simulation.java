@@ -4,19 +4,34 @@ import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
+import com.southcentralpositronics.reign_gdx.engine.entity.component.HealthComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.ParticleComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.PositionComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.system.LifetimeSystem;
+import com.southcentralpositronics.reign_gdx.engine.entity.system.MovementSystem;
 import com.southcentralpositronics.reign_gdx.engine.entity.system.ParticleSystem;
 import com.southcentralpositronics.reign_gdx.engine.input.PlayerInput;
 import com.southcentralpositronics.reign_gdx.engine.level.Arena;
+import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
+import com.southcentralpositronics.reign_gdx.engine.pathfinding.AStarPathfinder;
 import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
-import com.southcentralpositronics.reign_gdx.game.entity.mob.Mob;
-import com.southcentralpositronics.reign_gdx.game.entity.mob.PlayerMob;
-import com.southcentralpositronics.reign_gdx.game.entity.projectile.Projectile;
-import com.southcentralpositronics.reign_gdx.game.level.ReignLevel;
+import com.southcentralpositronics.reign_gdx.game.entity.Families;
+import com.southcentralpositronics.reign_gdx.game.entity.MobFactory;
+import com.southcentralpositronics.reign_gdx.game.entity.SpellFactory;
+import com.southcentralpositronics.reign_gdx.game.entity.component.MobComponent;
+import com.southcentralpositronics.reign_gdx.game.entity.component.PlayerComponent;
+import com.southcentralpositronics.reign_gdx.game.entity.system.AStarAiSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.CastingSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.ChaseAiSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.DeathSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.MobAnimationSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.PlayerInputSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.ShooterAiSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.SpellSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.WanderAiSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.WaveSystem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,18 +52,25 @@ import java.util.List;
  * never change the rules' choices.
  *
  * <p>The simulation owns an Ashley engine (ADR 0002) and updates it once per
- * tick, before the mobs and spells that still live on the old class tree.
- * Particles are Ashley entities; mobs and spells move to Ashley next.
+ * tick. Every entity is an Ashley entity, and every rule is a system, run in
+ * the order that
+ * {@link com.southcentralpositronics.reign_gdx.engine.entity.system.SystemPriority}
+ * sets.
  */
 public final class Simulation {
     /** The points that each kill adds to the score. */
     public static final int POINTS_PER_KILL = 100;
 
-    private final Engine                  engine = new Engine();
-    private final ImmutableArray<Entity>  particles;
-    private final ReignLevel              level;
-    private final PlayerMob               player;
-    private       long                    ticks  = 0;
+    private final Engine                 engine = new Engine();
+    private final EventLog               events = new EventLog();
+    private final Level                  level;
+    private final WaveSystem             waves;
+    private final MobFactory             mobs;
+    private final ImmutableArray<Entity> particles;
+    private final ImmutableArray<Entity> spells;
+    private final ImmutableArray<Entity> enemies;
+    private final Entity                 player;
+    private       long                   ticks  = 0;
 
     /**
      * Creates a simulation and starts the first wave.
@@ -58,14 +80,31 @@ public final class Simulation {
      * @param seed  The seed for every random choice in the rules.
      */
     public Simulation(Arena arena, long seed) {
-        level = new ReignLevel(arena, seed, engine);
+        level = new Level(arena, seed, engine);
+        mobs  = new MobFactory(engine, level.getRandom());
+        waves = new WaveSystem(level, mobs, events);
+
+        engine.addSystem(new PlayerInputSystem());
+        engine.addSystem(new ChaseAiSystem());
+        engine.addSystem(new AStarAiSystem(new AStarPathfinder(level)));
+        engine.addSystem(new WanderAiSystem(level));
+        engine.addSystem(new ShooterAiSystem());
+        engine.addSystem(new MovementSystem(level));
+        engine.addSystem(new CastingSystem(new SpellFactory(engine), events));
+        engine.addSystem(new SpellSystem(level, events));
+        engine.addSystem(new DeathSystem(level, events));
+        engine.addSystem(waves);
+        engine.addSystem(new MobAnimationSystem());
         engine.addSystem(new ParticleSystem(level));
         engine.addSystem(new LifetimeSystem());
+
         particles = engine.getEntitiesFor(Family.all(ParticleComponent.class, PositionComponent.class).get());
+        spells    = engine.getEntitiesFor(Families.SPELLS);
+        enemies   = engine.getEntitiesFor(Families.ENEMIES);
+
         Vector2i start = arena.getPlayerStart().orElseGet(level::getRandomNonSolidTile);
-        player = new PlayerMob(start.x, start.y);
-        level.add(player);
-        level.startWave();
+        player = mobs.createPlayer(start.x, start.y);
+        waves.startWave();
     }
 
     /**
@@ -75,14 +114,12 @@ public final class Simulation {
      * @param input What the player does.
      */
     public void setInput(PlayerInput input) {
-        player.setInput(input);
+        PlayerComponent.MAPPER.get(player).input = input;
     }
 
     /** Advances the simulation by one tick of {@link FixedTimestep#TICK_SECONDS}. */
     public void tick() {
-        // Ashley first, so entities that the old tree adds during this tick first move on the next one.
         engine.update(FixedTimestep.TICK_SECONDS);
-        level.update(FixedTimestep.TICK_SECONDS);
         ticks++;
     }
 
@@ -93,7 +130,7 @@ public final class Simulation {
 
     /** Gets a snapshot of the player. */
     public EntityState getPlayer() {
-        return player.getState();
+        return mobState(player);
     }
 
     /**
@@ -101,9 +138,7 @@ public final class Simulation {
      * enemies, then the player.
      */
     public List<EntityState> getEntities() {
-        List<Projectile> projectiles = level.getProjectiles();
-        List<Mob>        mobs        = level.getMobs();
-        List<EntityState> states = new ArrayList<>(particles.size() + projectiles.size() + mobs.size() + 1);
+        List<EntityState> states = new ArrayList<>(particles.size() + spells.size() + enemies.size() + 1);
         for (Entity entity : particles) {
             PositionComponent position = PositionComponent.MAPPER.get(entity);
             ParticleComponent particle = ParticleComponent.MAPPER.get(entity);
@@ -111,23 +146,31 @@ public final class Simulation {
             states.add(new EntityState(EntityKind.PARTICLE, position.x, position.y + particle.z, 0, Facing.DOWN,
                                        false, 0f));
         }
-        for (Projectile projectile : projectiles) {
-            states.add(new EntityState(EntityKind.SPELL, projectile.getCenterX(), projectile.getCenterY(), 0,
-                                       Facing.DOWN, false, 0f));
+        for (Entity entity : spells) {
+            PositionComponent position = PositionComponent.MAPPER.get(entity);
+            states.add(new EntityState(EntityKind.SPELL, position.x, position.y, 0, Facing.DOWN, false, 0f));
         }
-        for (Mob mob : mobs) states.add(mob.getState());
-        for (PlayerMob each : level.getPlayers()) states.add(each.getState());
+        for (Entity entity : enemies) states.add(mobState(entity));
+        states.add(mobState(player));
         return states;
+    }
+
+    /** Takes a snapshot of a mob: its position is the center of its collision box. */
+    private static EntityState mobState(Entity entity) {
+        PositionComponent position = PositionComponent.MAPPER.get(entity);
+        MobComponent      mob      = MobComponent.MAPPER.get(entity);
+        return new EntityState(mob.kind, position.x, position.y, HealthComponent.MAPPER.get(entity).health,
+                               mob.facing, mob.walking, mob.animationTime);
     }
 
     /** Gets the number of enemies in the arena. */
     public int getEnemyCount() {
-        return level.getMobs().size();
+        return enemies.size();
     }
 
     /** Gets the number of waves that have started. */
     public int getWave() {
-        return level.getWave();
+        return waves.getWave();
     }
 
     /** Checks whether a break between waves is running. Breaks don't exist yet, so this is always false. */
@@ -142,7 +185,7 @@ public final class Simulation {
 
     /** Gets the score: {@link #POINTS_PER_KILL} for each enemy the player has killed. */
     public long getScore() {
-        return player.getKills() * POINTS_PER_KILL;
+        return PlayerComponent.MAPPER.get(player).kills * POINTS_PER_KILL;
     }
 
     /** Checks whether the run is over. The player can't die yet, so this is always false. */
@@ -155,7 +198,7 @@ public final class Simulation {
      * happened, and forgets them.
      */
     public List<SimulationEvent> drainEvents() {
-        return level.drainEvents();
+        return events.drain();
     }
 
     /** Gets the arena's width, in tiles. */
@@ -181,16 +224,16 @@ public final class Simulation {
      * @param ty   The tile row.
      */
     public void spawnEnemy(EntityKind kind, int tx, int ty) {
-        level.spawnEnemy(kind, tx, ty);
+        mobs.createEnemy(kind, tx, ty);
     }
 
     /** Spawns another wave's worth of enemies without starting a new wave. This is the Add Mobs button. */
     public void addEnemies() {
-        level.spawnEnemies();
+        waves.spawnEnemies();
     }
 
     /** Removes every enemy and pauses automatic waves until {@link #addEnemies()}. This is the Clear Mobs button. */
     public void clearEnemies() {
-        level.clearMobs();
+        waves.clearEnemies();
     }
 }

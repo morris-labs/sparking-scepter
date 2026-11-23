@@ -82,10 +82,13 @@ the result. While the run is paused, no ticks run, but the screen still
 draws. Speeds, fire rates, and timers are per second, so the game plays at the
 same speed at any frame rate.
 
-Entities are moving to [Ashley](https://github.com/libgdx/ashley), libGDX's
+Every entity is an [Ashley](https://github.com/libgdx/ashley) entity, libGDX's
 entity component system (see `docs/adr/0002-ashley-for-entities.md`). The
-simulation owns an Ashley engine and updates it each tick. Particles are
-Ashley entities; mobs and spells still use the old class tree.
+simulation owns an Ashley engine and updates it each tick. Each behavior, such
+as a position, a collision box, health, or a chase AI, is a component, and
+each rule, such as movement, casting, or spell hits, is a system. The player
+and each enemy type are built by factories from components, and A* paths come
+from an engine pathfinding service that the A* AI system calls.
 
 ## Project layout
 
@@ -94,8 +97,9 @@ Ashley entities; mobs and spells still use the old class tree.
   particles, input, the fixed
   timestep, rendering helpers, and the file chooser widget. Engine packages have no dependency on game packages.
 - `core/src/main/java/com/southcentralpositronics/reign_gdx/game/`: Reign's
-  application, main menu and play screens, simulation, renderer, mobs,
-  spells, level rules, HUD, minimap, and map editor.
+  application, main menu and play screens, simulation, renderer, mob and
+  spell factories, Reign's components and systems (enemy AI, casting, spells,
+  death, and waves), HUD, minimap, and map editor.
 - `core/src/test/`: JUnit 5 tests and PNG fixtures.
 - `lwjgl3/`: the desktop launchers.
 - `assets/`: atlases, levels, sprites, and UI skins. Both run tasks use this
