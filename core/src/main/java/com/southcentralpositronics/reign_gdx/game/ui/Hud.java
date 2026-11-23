@@ -19,8 +19,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.southcentralpositronics.reign_gdx.game.entity.mob.PlayerMob;
-import com.southcentralpositronics.reign_gdx.game.level.ReignLevel;
+import com.southcentralpositronics.reign_gdx.game.sim.Simulation;
 
 /**
  * The side panel ported from the Java2D Reign player UI: a minimap, the player's name, a
@@ -36,12 +35,11 @@ public class Hud implements Disposable {
     private static final Color HEALTH_COLOR     = new Color(0x870000ff);
     private static final Color HEALTH_BG_COLOR  = Color.BLACK;
     private static final Color NAME_COLOR       = new Color(0xbbbbbbff);
-    private static final int   POINTS_PER_KILL  = 100;
 
     private final Stage       stage;
     private final Skin        skin;
     private final Texture     exitTexture;
-    private final PlayerMob   player;
+    private final Simulation  simulation;
     private final ProgressBar healthBar;
     private final Label       scoreLabel;
     private final Cell<Actor> topSlot;
@@ -51,11 +49,12 @@ public class Hud implements Disposable {
     /**
      * Builds the panel.
      *
-     * @param player The player whose name, health, and score the panel shows.
-     * @param level  The level that the Add Mobs and Clear Mobs buttons act on.
+     * @param simulation The simulation whose player health and score the panel
+     *                   shows, and that the Add Mobs and Clear Mobs buttons act on.
+     * @param playerName The name to show for the player.
      */
-    public Hud(PlayerMob player, ReignLevel level) {
-        this.player = player;
+    public Hud(Simulation simulation, String playerName) {
+        this.simulation = simulation;
         stage       = new Stage(new ScreenViewport());
         skin        = new Skin(Gdx.files.internal("ui/default/uiskin.json"));
         exitTexture = new Texture(Gdx.files.internal("ui/home.png"));
@@ -69,7 +68,7 @@ public class Hud implements Disposable {
         topSlot = panel.add((Actor) null).center().padBottom(12);
         panel.row();
 
-        Label name = new Label(player.getName(), skin);
+        Label name = new Label(playerName, skin);
         name.setColor(NAME_COLOR);
         name.setFontScale(1.5f);
         panel.add(name).row();
@@ -86,11 +85,11 @@ public class Hud implements Disposable {
         panel.add(scoreLabel).padTop(4).row();
 
         TextButton addMobs = new TextButton("Add Mobs", skin);
-        addMobs.addListener(changed(level::generateMobs));
+        addMobs.addListener(changed(simulation::addEnemies));
         panel.add(addMobs).width(140).height(40).padTop(12).row();
 
         TextButton clearMobs = new TextButton("Clear Mobs", skin);
-        clearMobs.addListener(changed(level::clearMobs));
+        clearMobs.addListener(changed(simulation::clearEnemies));
         panel.add(clearMobs).width(140).height(40).row();
 
         ImageButton exit = new ImageButton(new TextureRegionDrawable(exitTexture));
@@ -103,7 +102,7 @@ public class Hud implements Disposable {
         root.right().add(panel).width(PANEL_WIDTH).growY();
         stage.addActor(root);
 
-        minimap = new Minimap(level);
+        minimap = new Minimap(simulation);
         setTopActor(minimap);
         update(0f);
     }
@@ -144,16 +143,16 @@ public class Hud implements Disposable {
     }
 
     /**
-     * Updates the health bar and score from the player and runs the panel's
+     * Updates the health bar and score from the simulation and runs the panel's
      * actions.
      *
      * @param delta The time since the last frame, in seconds.
      */
     public void update(float delta) {
-        healthBar.setValue((float) player.getHealth());
-        if (player.getScore() != shownScore) {
-            shownScore = player.getScore();
-            scoreLabel.setText("Score: " + shownScore * POINTS_PER_KILL);
+        healthBar.setValue((float) simulation.getPlayer().health());
+        if (simulation.getScore() != shownScore) {
+            shownScore = simulation.getScore();
+            scoreLabel.setText("Score: " + shownScore);
         }
         stage.act(delta);
     }

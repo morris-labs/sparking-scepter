@@ -5,9 +5,9 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 
+/** A sequence of atlas regions that plays as an animation. */
 public class AnimatedSprite {
     private final Animation<TextureRegion> animation;
-    private       float                    stateTime = 0f;
     private final boolean                  looping;
 
     public AnimatedSprite(TextureAtlas atlas, String regionName, float frameDuration, boolean looping) {
@@ -19,18 +19,14 @@ public class AnimatedSprite {
         this.looping   = looping;
     }
 
-    public void update(float deltaTime) {
-        stateTime += deltaTime;
-    }
-
-    public TextureRegion getCurrentFrame() {
+    /**
+     * Gets the frame that shows after the animation has played for a time.
+     *
+     * @param stateTime The seconds since the animation started.
+     * @return The frame.
+     */
+    public TextureRegion getFrameAt(float stateTime) {
         return animation.getKeyFrame(stateTime, looping);
-    }
-
-    public TextureRegion getFrame(int index) {
-        TextureRegion[] frames = animation.getKeyFrames();
-        if (index < 0 || index >= frames.length) throw new IndexOutOfBoundsException();
-        return frames[index];
     }
 
     public int getFrameCount() {
@@ -40,16 +36,4 @@ public class AnimatedSprite {
     public float getAnimationDuration() {
         return animation.getAnimationDuration();
     }
-
-    public void reset() {
-        stateTime = 0f;
-    }
-
-    public void setFrame(int index) {
-        if (index < 0 || index >= animation.getKeyFrames().length) {
-            throw new IndexOutOfBoundsException("Frame index out of bounds");
-        }
-        stateTime = index * animation.getFrameDuration();
-    }
 }
-

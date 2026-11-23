@@ -32,6 +32,5 @@ class LevelTest {
         assertEquals(Tile.tileType.void_tile, level.getTileAt(2, 0).tile_Type);
         assertTrue(level.getTileAt(2, 0).isSolid());
         assertNull(level.getTileAt(3, 0));
-        assertNull(level.getTileAt(0, 0).getTexture());
     }
 }

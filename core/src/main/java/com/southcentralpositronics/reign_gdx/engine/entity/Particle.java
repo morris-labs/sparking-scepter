@@ -1,35 +1,24 @@
 package com.southcentralpositronics.reign_gdx.engine.entity;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 
+/**
+ * One red pixel that bounces off solid tiles and expires. Particles have no
+ * effect on play; a renderer draws each one at {@link #getDrawX()} and
+ * {@link #getDrawY()}.
+ */
 public class Particle extends Entity {
     protected double xx, yy, zz, xa, ya, za;
 
     /**
-     * One red pixel that every particle draws. A texture per particle leaked
-     * GPU memory and broke sprite batching: a single fireball spawns up to
-     * 1,000 particles.
+     * Creates a particle.
+     *
+     * @param x     The x coordinate where it starts.
+     * @param y     The y coordinate where it starts.
+     * @param angle Unused; particles scatter at random.
+     * @param life  The base lifetime, in ticks. Each particle adds up to 14 more.
+     * @param level The level that the particle bounces in.
      */
-    private static TextureRegion pixel;
-
-    /** Gets the shared red pixel, creating it on first use on the GL thread. */
-    private static TextureRegion pixel() {
-        if (pixel == null) {
-            Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-            pixmap.setColor(Color.RED);
-            pixmap.fill();
-            pixel = new TextureRegion(new Texture(pixmap));
-            pixmap.dispose();
-        }
-        return pixel;
-    }
-
-
     public Particle(double x, double y, double angle, int life, Level level) {
         this.x    = x;
         this.y    = y;
@@ -43,6 +32,7 @@ public class Particle extends Entity {
         init(level);
     }
 
+    /** Advances the particle by one tick. */
     public void update() {
         time++;
         if (time >= Integer.MAX_VALUE - 1) {
@@ -80,13 +70,18 @@ public class Particle extends Entity {
         return level.tileCollision(xx + xb, yy + yb, 1, 1);
     }
 
+    /** Gets the x coordinate to draw the particle at: its ground position. */
+    public double getDrawX() {
+        return xx;
+    }
+
     /**
-     * Draws the particle at its ground position, raised by its height. The
-     * Java2D version drew at (x - 5, y - z + 5) for its y-down screen; in
-     * libGDX's y-up world that put particles 5 px left of and below where
-     * they collide, and made height push them down.
+     * Gets the y coordinate to draw the particle at: its ground position,
+     * raised by its height. The Java2D version drew at (x - 5, y - z + 5) for
+     * its y-down screen; in libGDX's y-up world that put particles 5 px left of
+     * and below where they collide, and made height push them down.
      */
-    public void render(SpriteBatch batch) {
-        batch.draw(pixel(), (float) xx, (float) (yy + zz));
+    public double getDrawY() {
+        return yy + zz;
     }
 }

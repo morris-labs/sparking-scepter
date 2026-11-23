@@ -1,23 +1,36 @@
 package com.southcentralpositronics.reign_gdx.game.entity.mob;
 
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Node;
+import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
+import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
 
 import java.util.List;
 
 /** An enemy that follows an A* path to the player, around walls. */
 public class AStarChaserMob extends Mob {
-    private       double     xa        = 0;
-    private       double     ya        = 0;
-    private final double     speed     = 0.5;
-    private       List<Node> path      = null;
-    private       float      pathTimer = 0f; // seconds since the last path
+    /**
+     * The walking speed along each axis, in pixels per second. The frame-based
+     * version asked for 0.5 px per frame, but its pixel stepping rounded that up
+     * to a whole pixel, so the A* chaser always moved 60 px per second.
+     */
+    public static final double SPEED                = 60;
+    /** The time between path searches, in seconds. */
+    private static final float PATH_REFRESH_SECONDS = 0.1f;
 
-    public AStarChaserMob(int x, int y, TextureAtlas atlas) {
-        loadAnimations(atlas, ENEMY_SPRITE);
+    private double     xa        = 0;
+    private double     ya        = 0;
+    private List<Node> path      = null;
+    private float      pathTimer = 0f; // seconds since the last path
+
+    public AStarChaserMob(int x, int y) {
         placeOnTile(x, y);
         this.type = Type.ENEMY;
+    }
+
+    @Override
+    public EntityKind kind() {
+        return EntityKind.ASTAR_CHASER;
     }
 
     private void calculatePath() {
@@ -32,6 +45,7 @@ public class AStarChaserMob extends Mob {
     }
 
     private void moveAlongPath() {
+        double step = FixedTimestep.perTick(SPEED);
         xa = 0;
         ya = 0;
 
@@ -41,10 +55,10 @@ public class AStarChaserMob extends Mob {
             double   targetX = target.x * tileSize - paddingLeft;
             double   targetY = target.y * tileSize - paddingBottom;
 
-            if (x < targetX) xa += speed;
-            if (x > targetX) xa -= speed;
-            if (y < targetY) ya += speed;
-            if (y > targetY) ya -= speed;
+            if (x < targetX) xa += step;
+            if (x > targetX) xa -= step;
+            if (y < targetY) ya += step;
+            if (y > targetY) ya -= step;
         }
 
         if (xa != 0 || ya != 0) {
@@ -59,20 +73,13 @@ public class AStarChaserMob extends Mob {
     public void update(float delta) {
         pathTimer += delta;
 
-        // Recalculate the path 10 times per second.
-        if (pathTimer >= 0.1f) {
+        if (pathTimer >= PATH_REFRESH_SECONDS) {
             calculatePath();
             pathTimer = 0f;
         }
 
         moveAlongPath();
-
-        if (Math.abs(ya) > Math.abs(xa)) {
-            direction = ya < 0 ? Direction.UP : Direction.DOWN;
-        } else if (xa != 0) {
-            direction = xa < 0 ? Direction.LEFT : Direction.RIGHT;
-        }
-
-        super.updateAnimation(delta, walking, direction);
+        faceMovement(xa, ya);
+        updateAnimation(delta);
     }
 }

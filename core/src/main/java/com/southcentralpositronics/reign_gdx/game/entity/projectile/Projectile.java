@@ -1,26 +1,32 @@
 package com.southcentralpositronics.reign_gdx.game.entity.projectile;
 
-import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
 import com.southcentralpositronics.reign_gdx.engine.entity.spawner.ParticleSpawner;
-import com.southcentralpositronics.reign_gdx.game.level.ReignLevel;
+import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
 
+/**
+ * A projectile that flies in a straight line until it hits a solid tile, a
+ * mob, or the end of its range. Projectiles hold no textures; a renderer draws
+ * them by kind.
+ */
 public abstract class Projectile extends Entity {
-    /** The time between shots, in seconds: 8 frames at 60 FPS. */
+    /** The time between shots, in seconds: 8 ticks. */
     public static final float SHOT_DELAY = 0.125f;
+    /** The width and height of a projectile's sprite, in pixels. */
+    public static final int   SIZE       = 16;
 
     protected Vector2 position;
     protected Vector2 origin;
     protected Vector2 velocity;
 
     protected double angle;
+    /** The flight speed, in pixels per second. */
     protected double speed;
+    /** The farthest the projectile flies, in pixels. */
     protected double range;
 
-    protected TextureRegion texture;
-    protected Entity        firedBy;
+    protected Entity firedBy;
 
 
     /**
@@ -42,16 +48,16 @@ public abstract class Projectile extends Entity {
         this.velocity = new Vector2((float) Math.cos(direction), (float) Math.sin(direction));
     }
 
+    /** Advances the projectile by one tick. */
     public void update() {
         if (removed) return;
         float   x       = position.x;
         float   y       = position.y;
-        double  xDelta  = velocity.x * speed;
-        double  yDelta  = velocity.y * speed;
-        int     width   = texture.getRegionWidth();
-        int     height  = texture.getRegionHeight();
+        double  step    = FixedTimestep.perTick(speed);
+        double  xDelta  = velocity.x * step;
+        double  yDelta  = velocity.y * step;
         Vector2 nextPos = position.cpy().add((float) xDelta, (float) yDelta);
-        boolean hitWall = level.tileCollision(x - width / 2.0 + xDelta, y - height / 2.0 + yDelta, width, height,
+        boolean hitWall = level.tileCollision(x - SIZE / 2.0 + xDelta, y - SIZE / 2.0 + yDelta, SIZE, SIZE,
                                               paddingLeft, paddingRight, paddingTop, paddingBottom);
 
         if (hitWall) {
@@ -66,12 +72,6 @@ public abstract class Projectile extends Entity {
         }
     }
 
-    public void render(Batch batch) {
-        if (texture != null && !removed) {
-            batch.draw(texture, position.x - texture.getRegionWidth() / 2f, position.y - texture.getRegionHeight() / 2f);
-        }
-    }
-
     public void hitTarget() {
         if (removed) return;
         level.add(new ParticleSpawner(position.x, position.y, angle, 10, 1000, level));
@@ -83,10 +83,6 @@ public abstract class Projectile extends Entity {
         if (removed) return;
         level.add(new ParticleSpawner(position.x, position.y, angle, 10, 250, level));
         removed = true;
-    }
-
-    public void init(ReignLevel level) {
-        this.level = level;
     }
 
     public Entity getFiredBy() {
@@ -109,9 +105,5 @@ public abstract class Projectile extends Entity {
     /** Gets the y coordinate of the projectile's center. */
     public double getCenterY() {
         return position.y;
-    }
-
-    public TextureRegion getTexture() {
-        return texture;
     }
 }

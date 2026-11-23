@@ -17,7 +17,7 @@ public class TileMapBuilder {
      * the highest row of the grid. The level then looks like the PNG file.
      *
      * @param colorMap  A Pixmap where each pixel color represents a tile type
-     * @param tileTypes A map from pixel ARGB color (int) to Tile instances (with textures already set)
+     * @param tileTypes A map from pixel ARGB color (int) to Tile instances
      * @return A 2D array of Tile objects representing the level
      */
     public static Tile[][] buildTileGrid(Pixmap colorMap, Map<Integer, Tile> tileTypes) {
@@ -44,7 +44,6 @@ public class TileMapBuilder {
                 int gridY = height - 1 - y;
                 tileInstance.x = x;
                 tileInstance.y = gridY;
-                tileInstance.setTexture(baseTile.getTexture());
 
                 tileGrid[x][gridY] = tileInstance;
             }

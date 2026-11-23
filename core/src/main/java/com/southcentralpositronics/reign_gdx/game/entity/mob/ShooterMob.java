@@ -1,21 +1,41 @@
 package com.southcentralpositronics.reign_gdx.game.entity.mob;
 
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.southcentralpositronics.reign_gdx.engine.level.Level;
+import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
+import com.southcentralpositronics.reign_gdx.game.sim.EntityKind;
+
+import java.util.Random;
 
 /** An enemy that wanders and shoots at the closest player in range. */
 public class ShooterMob extends Mob {
-    private int   xa                   = random.nextInt(3) - 1;
-    private int   ya                   = random.nextInt(3) - 1;
+    /** The wandering speed, in pixels per second. */
+    public static final double SPEED = 60;
+
+    private int   xa;
+    private int   ya;
     private float directionChangeTimer = 0;
 
-    public ShooterMob(int x, int y, TextureAtlas atlas) {
-        loadAnimations(atlas, ENEMY_SPRITE);
+    public ShooterMob(int x, int y) {
         placeOnTile(x, y);
         this.type = Type.ENEMY;
     }
 
     @Override
+    public EntityKind kind() {
+        return EntityKind.SHOOTER;
+    }
+
+    @Override
+    public void init(Level level) {
+        super.init(level);
+        Random random = gameLevel.getRandom();
+        xa = random.nextInt(3) - 1;
+        ya = random.nextInt(3) - 1;
+    }
+
+    @Override
     public void update(float delta) {
+        Random random = gameLevel.getRandom();
         directionChangeTimer += delta;
         if (shootCooldown > 0f) shootCooldown -= delta;
 
@@ -36,19 +56,14 @@ public class ShooterMob extends Mob {
         if (xa != 0 || ya != 0) {
             if (collision(x, y + ya * 2)) ya *= -1;
             if (collision(x + xa * 2, y)) xa *= -1;
-            move(xa, ya);
+            double step = FixedTimestep.perTick(SPEED);
+            move(xa * step, ya * step);
             walking = true;
         } else {
             walking = false;
         }
 
-        // Determine facing direction
-        if (Math.abs(ya) > Math.abs(xa)) {
-            direction = ya < 0 ? Direction.UP : Direction.DOWN;
-        } else if (xa != 0) {
-            direction = xa < 0 ? Direction.LEFT : Direction.RIGHT;
-        }
-
-        super.updateAnimation(delta, walking, direction);
+        faceMovement(xa, ya);
+        updateAnimation(delta);
     }
 }
