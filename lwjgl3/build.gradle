@@ -38,6 +38,8 @@ def os = System.properties['os.name'].toLowerCase()
 
 run {
   workingDir = rootProject.file('assets').path
+  // ./gradlew lwjgl3:run -Pdebug turns on the debug tools: Add Mobs, Clear Mobs, and hitbox outlines.
+  if (project.hasProperty('debug')) systemProperty 'reign.debug', 'true'
 // You can uncomment the next line if your IDE claims a build failure even when the app closed properly.
   //setIgnoreExitValue(true)
 
@@ -173,16 +175,4 @@ startScripts.classpath = project.tasks.jar.outputs.files
 
 if(enableGraalNative == 'true') {
   apply from: file("nativeimage.gradle")
-}
-
-// Runs the map editor instead of the game. Use: ./gradlew lwjgl3:runEditor
-tasks.register('runEditor', JavaExec) {
-  group = 'application'
-  description = 'Runs the Reign map editor.'
-  dependsOn 'classes'
-  classpath = sourceSets.main.runtimeClasspath
-  mainClass = 'com.southcentralpositronics.reign_gdx.mapEditorLauncher.mapEditorLauncher'
-  workingDir = rootProject.file('assets').path
-  javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(23) }
-  if (os.contains('mac')) jvmArgs += "-XstartOnFirstThread"
 }

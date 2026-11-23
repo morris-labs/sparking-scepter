@@ -1,73 +1,50 @@
 package com.southcentralpositronics.reign_gdx.engine.level;
 
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.math.MathUtils;
-import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
-import com.southcentralpositronics.reign_gdx.engine.entity.Particle;
-import com.southcentralpositronics.reign_gdx.engine.graphics.TileLoader;
-import com.southcentralpositronics.reign_gdx.engine.graphics.TileMapBuilder;
-import com.southcentralpositronics.reign_gdx.engine.level.tile.Node;
+import com.badlogic.ashley.core.Engine;
+import com.southcentralpositronics.reign_gdx.engine.entity.ParticleEmitter;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
-import com.southcentralpositronics.reign_gdx.engine.level.tile.TileCoordinates;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.PriorityQueue;
+import java.util.Random;
+import java.util.function.Predicate;
 
-/** Owns a PNG level's terrain, collision, paths, and generic entities. */
+/**
+ * Owns a level's terrain and tile collision, and the random source of its
+ * rules. The level's entities live in an Ashley engine. A level holds no
+ * textures and needs no window or OpenGL context; a renderer draws it from the
+ * outside.
+ */
 public class Level {
-    protected final ArrayList<Entity> entities = new ArrayList<>();
-    protected final ArrayList<Particle> particles = new ArrayList<>();
+    protected final Random random;
+    protected final ParticleEmitter particleEmitter;
+    protected final List<Vector2i> spawnPoints;
     protected int width, height;
     public Tile[][] tiles;
 
-    /** Loads terrain without creating textures or a window. */
-    public Level(FileHandle image) {
-        this(image, null);
+    /**
+     * Builds a level from an arena's tiles.
+     *
+     * @param arena The arena to play.
+     * @param seed   The seed for every random choice that the level's rules
+     *               make. Particles draw from a separate source with the same
+     *               seed, so they don't change the rules' choices.
+     * @param engine The Ashley engine that holds the level's entities. The
+     *               level adds its {@link ParticleEmitter} to it as a system.
+     */
+    public Level(Arena arena, long seed, Engine engine) {
+        this.tiles           = arena.tiles();
+        this.width           = arena.getWidth();
+        this.height          = arena.getHeight();
+        this.spawnPoints     = arena.getSpawnPoints();
+        this.random          = new Random(seed);
+        this.particleEmitter = new ParticleEmitter(engine, new Random(seed));
+        engine.addSystem(particleEmitter);
     }
 
-    /** Loads terrain and uses the supplied atlas for tile textures. */
-    public Level(FileHandle image, TextureAtlas atlas) {
-        Pixmap colorMap = new Pixmap(image);
-        try {
-            width = colorMap.getWidth();
-            height = colorMap.getHeight();
-            tiles = TileMapBuilder.buildTileGrid(colorMap, TileLoader.loadTiles(atlas));
-        } finally {
-            colorMap.dispose();
-        }
-    }
-
-    /** Adds a generic entity or particle to the level. */
-    public void add(Entity entity) {
-        entity.init(this);
-        if (entity instanceof Particle particle) particles.add(particle);
-        else entities.add(entity);
-    }
-
-    /** Advances generic entities and particles by one frame. */
-    public void update(float delta) {
-        for (int i = 0, n = entities.size(); i < n; i++) entities.get(i).update();
-        for (int i = 0, n = particles.size(); i < n; i++) particles.get(i).update();
-        remove();
-    }
-
-    /** Removes expired generic entities and particles. */
-    protected void remove() {
-        entities.removeIf(Entity::isRemoved);
-        particles.removeIf(Entity::isRemoved);
-    }
-
-    /** Draws terrain and particles. */
-    public void render(SpriteBatch batch) {
-        renderTiles(batch);
-        for (Particle particle : particles) particle.render(batch);
+    /** Gets the emitter that bursts particles into the level's Ashley engine. */
+    public ParticleEmitter getParticleEmitter() {
+        return particleEmitter;
     }
 
     public Tile getTileAt(int x, int y) {
@@ -78,122 +55,59 @@ public class Level {
     }
 
     /**
-     * Checks whether a box, shrunk by its paddings, overlaps a solid tile or
-     * leaves the map.
+     * Checks whether a box overlaps a tile that blocks movement, or leaves the
+     * map.
+     *
+     * @param left   The x coordinate of the box's left edge, in pixels.
+     * @param bottom The y coordinate of the box's bottom edge, in pixels.
+     * @param width  The box's width, in pixels.
+     * @param height The box's height, in pixels.
+     * @return Whether the box is blocked.
      */
-    public boolean tileCollision(double x, double y, int width, int height, int padLeft, int padRight, int padTop, int padBottom) {
-        int tileSize = Tile.SIZE;
-
-        double hitboxX      = x + padLeft;
-        double hitboxY      = y + padBottom;
-        int    hitboxWidth  = width - padLeft - padRight;
-        int    hitboxHeight = height - padTop - padBottom;
-
-        int left   = (int) (hitboxX / tileSize);
-        int right  = (int) ((hitboxX + hitboxWidth - 1) / tileSize);
-        int top    = (int) (hitboxY / tileSize);
-        int bottom = (int) ((hitboxY + hitboxHeight - 1) / tileSize);
-
-        for (int tx = left; tx <= right; tx++) {
-            for (int ty = top; ty <= bottom; ty++) {
-                if (tx < 0 || ty < 0 || tx >= tiles.length || ty >= tiles[0].length) {
-                    return true; // Out of bounds counts as solid.
-                }
-
-                Tile tile = tiles[tx][ty];
-                if (tile != null && tile.isSolid()) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    public boolean tileCollision(double x, double y, int width, int height) {
-        return tileCollision(x, y, width, height, 0, 0, 0, 0);
+    public boolean blocksMovement(double left, double bottom, int width, int height) {
+        return boxBlocked(left, bottom, width, height, Tile::blocksMovement);
     }
 
     /**
-     * Finds a path between two tiles with A*, ported from the Java2D
-     * {@code Level.findPath()}.
+     * Checks whether a box overlaps a tile that stops spells, or leaves the map.
      *
-     * <p>A mob's collision box fits in one tile, so any open tile is a valid
-     * step. Diagonal steps cost the square root of two and can't cut a wall
-     * corner. The Java2D version costed diagonals at 0.95, which made paths
-     * zigzag, and let them cut corners.
-     *
-     * @param startVec The tile to start from.
-     * @param destVec  The tile to reach.
-     * @return The path from the goal back to the first step, so the next tile
-     *     to move to is the last element. The list is empty when no path exists
-     *     or when the mob is already on the goal tile.
+     * @param left   The x coordinate of the box's left edge, in pixels.
+     * @param bottom The y coordinate of the box's bottom edge, in pixels.
+     * @param width  The box's width, in pixels.
+     * @param height The box's height, in pixels.
+     * @return Whether the box is blocked.
      */
-    public List<Node> findPath(Vector2i startVec, Vector2i destVec) {
-        List<Node> path = new ArrayList<>();
-        if (!inBounds(startVec.x, startVec.y) || !isTileOpen(destVec.x, destVec.y)) return path;
+    public boolean blocksSpells(double left, double bottom, int width, int height) {
+        return boxBlocked(left, bottom, width, height, Tile::blocksSpells);
+    }
 
-        double[] bestCost = new double[width * height];
-        Arrays.fill(bestCost, Double.POSITIVE_INFINITY);
-        boolean[]           closed = new boolean[width * height];
-        PriorityQueue<Node> open   = new PriorityQueue<>(Comparator.comparingDouble((Node n) -> n.fCost));
+    private boolean boxBlocked(double left, double bottom, int boxWidth, int boxHeight, Predicate<Tile> blocks) {
+        int tileSize = Tile.SIZE;
 
-        open.add(new Node(startVec, null, 0, Vector2i.getDistance(startVec, destVec)));
-        bestCost[tileIndex(startVec.x, startVec.y)] = 0;
+        int firstColumn = (int) Math.floor(left / tileSize);
+        int lastColumn  = (int) Math.floor((left + boxWidth - 1) / tileSize);
+        int firstRow    = (int) Math.floor(bottom / tileSize);
+        int lastRow     = (int) Math.floor((bottom + boxHeight - 1) / tileSize);
 
-        while (!open.isEmpty()) {
-            Node current = open.poll();
-            int  index   = tileIndex(current.tile.x, current.tile.y);
-            if (closed[index]) continue;    // A cheaper copy of this tile was expanded already.
-            closed[index] = true;
-
-            if (current.tile.equals(destVec)) {
-                while (current.parent != null) {
-                    path.add(current);
-                    current = current.parent;
-                }
-                return path;
-            }
-
-            for (int i = 0; i < 9; i++) {
-                if (i == 4) continue;       // The current tile.
-                int xDir = (i % 3) - 1;
-                int yDir = (i / 3) - 1;
-                int nx   = current.tile.x + xDir;
-                int ny   = current.tile.y + yDir;
-
-                if (!isTileOpen(nx, ny)) continue;
-                if (xDir != 0 && yDir != 0) {
-                    // Don't cut corners: both orthogonal neighbours must be open too.
-                    if (!isTileOpen(current.tile.x + xDir, current.tile.y)) continue;
-                    if (!isTileOpen(current.tile.x, current.tile.y + yDir)) continue;
-                }
-
-                int nIndex = tileIndex(nx, ny);
-                if (closed[nIndex]) continue;
-                double gCost = current.gCost + (xDir != 0 && yDir != 0 ? Math.sqrt(2) : 1);
-                if (gCost >= bestCost[nIndex]) continue;
-                bestCost[nIndex] = gCost;
-                Vector2i next = new Vector2i(nx, ny);
-                open.add(new Node(next, current, gCost, Vector2i.getDistance(next, destVec)));
+        for (int tx = firstColumn; tx <= lastColumn; tx++) {
+            for (int ty = firstRow; ty <= lastRow; ty++) {
+                if (!inBounds(tx, ty)) return true; // Out of bounds counts as blocked.
+                Tile tile = tiles[tx][ty];
+                if (tile != null && blocks.test(tile)) return true;
             }
         }
-        return path;
+        return false;
+    }
+
+    /** Checks whether a tile is inside the map and doesn't block movement. */
+    public boolean isWalkable(int tx, int ty) {
+        if (!inBounds(tx, ty)) return false;
+        Tile tile = tiles[tx][ty];
+        return tile != null && !tile.blocksMovement();
     }
 
     private boolean inBounds(int tx, int ty) {
         return tx >= 0 && ty >= 0 && tx < width && ty < height;
-    }
-
-    private int tileIndex(int tx, int ty) {
-        return ty * width + tx;
-    }
-
-    /** Checks whether the tile is inside the map and not solid. */
-    private boolean isTileOpen(int tx, int ty) {
-        if (!inBounds(tx, ty)) return false;
-        Tile tile = tiles[tx][ty];
-        return tile != null && !tile.isSolid();
     }
 
     public int getWidth() {
@@ -205,29 +119,15 @@ public class Level {
     }
 
     /**
-     * Picks a random open tile away from the map edge. After {@code width *
-     * height} misses, it gives up and returns tile (0, 0).
+     * Gets the tiles where enemies enter, in the order the arena lists them.
+     * The list can't change; don't change its tiles.
      */
-    public TileCoordinates getRandomNonSolidTile() {
-        if (tiles == null || tiles.length == 0) throw new IllegalStateException("Level not loaded");
-
-        int maxTries = width * height;
-        for (int tries = 0; tries < maxTries; tries++) {
-            int  x = MathUtils.random(1, width - 2);
-            int  y = MathUtils.random(1, height - 2);
-            Tile t = tiles[x][y];
-            if (t != null && !t.isSolid()) return new TileCoordinates(x, y);
-        }
-        return new TileCoordinates(0, 0);
+    public List<Vector2i> getSpawnPoints() {
+        return spawnPoints;
     }
 
-    protected void renderTiles(SpriteBatch batch) {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                Tile tile = tiles[x][y];
-                if (tile == null || tile.getTexture() == null) continue;
-                batch.draw(tile.getTexture(), x * Tile.SIZE, y * Tile.SIZE, Tile.SIZE, Tile.SIZE);
-            }
-        }
+    /** Gets the random number source that the level's rules draw from. */
+    public Random getRandom() {
+        return random;
     }
 }

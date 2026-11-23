@@ -1,188 +1,139 @@
 package com.southcentralpositronics.reign_gdx.game;
 
-import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
-import com.southcentralpositronics.reign_gdx.game.entity.mob.PlayerMob;
-import com.southcentralpositronics.reign_gdx.engine.input.Keyboard;
-import com.southcentralpositronics.reign_gdx.engine.input.Mouse;
-import com.southcentralpositronics.reign_gdx.game.level.ReignLevel;
-import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
-import com.southcentralpositronics.reign_gdx.engine.level.tile.TileCoordinates;
-import com.southcentralpositronics.reign_gdx.game.ui.Hud;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.southcentralpositronics.reign_gdx.game.audio.GameAudio;
+import com.southcentralpositronics.reign_gdx.game.score.HighScoreStore;
+import com.southcentralpositronics.reign_gdx.game.score.PreferencesHighScoreStore;
+import com.southcentralpositronics.reign_gdx.game.screen.GameOverScreen;
+import com.southcentralpositronics.reign_gdx.game.screen.MainMenuScreen;
+import com.southcentralpositronics.reign_gdx.game.screen.PlayScreen;
+import com.southcentralpositronics.reign_gdx.game.screen.RunResult;
 
-public class Game extends ApplicationAdapter {
-    public static final int           WIDTH           = (int) (1920);
-    public static final int           HEIGHT          = (int) (1080);
-    public static final int           SCALE           = 4;
-    public static final int           VIEWPORT_WIDTH  = WIDTH / SCALE;
-    public static final int           VIEWPORT_HEIGHT = HEIGHT / SCALE;
-    public static final String        TITLE           = "Reign";
-    /** Draws a red outline around the player's collision box. For debugging. */
-    private static final boolean      DRAW_HITBOX     = false;
-    protected           ShapeRenderer shapeRenderer;
-    protected           String        mapPath;
+/**
+ * The game application. It owns the resources that every screen shares, such
+ * as the atlases, the UI skin, the audio, and the high score store, and switches between
+ * the main menu, the play screen, and the game-over screen. The game opens on
+ * the main menu.
+ */
+public class Game extends com.badlogic.gdx.Game {
+    public static final int    WIDTH           = 1920;
+    public static final int    HEIGHT          = 1080;
+    public static final int    SCALE           = 4;
+    public static final int    VIEWPORT_WIDTH  = WIDTH / SCALE;
+    public static final int    VIEWPORT_HEIGHT = HEIGHT / SCALE;
+    public static final String TITLE           = "Reign";
+    /** The name the side panel shows for the player. */
+    public static final String PLAYER_NAME     = "King Steve";
+    /** The arena that every run plays: the Java2D spawn level, converted to a Tiled TMX file. */
+    public static final String ARENA_PATH      = "levels/SpawnLevel.tmx";
+    /**
+     * The system property that turns on the debug tools: the Add Mobs and
+     * Clear Mobs buttons and the hitbox outlines. They're off unless it's
+     * {@code true}; {@code ./gradlew lwjgl3:run -Pdebug} sets it.
+     */
+    public static final String DEBUG_PROPERTY  = "reign.debug";
 
+    private final boolean debug = Boolean.getBoolean(DEBUG_PROPERTY);
 
-    private SpriteBatch  batch;
-    private Viewport     viewport;
-    private TextureAtlas mobAtlas, tileAtlas;
-    private Keyboard           keyboard;
-    private Mouse              mouse;
-    private ReignLevel              level;
-    private Hud                hud;
-    private PlayerMob          player;
-    private OrthographicCamera camera = new OrthographicCamera();
+    private SpriteBatch    batch;
+    private TextureAtlas   mobAtlas, tileAtlas;
+    private Skin           skin;
+    private HighScoreStore highScores;
+    private GameAudio      audio;
 
     @Override
     public void create() {
-        String mobAtlasPath  = "atlas/mobs.atlas";
-        String tileAtlasPath = "atlas/Tiles.atlas";
-        // The 64x64 test map; levels/SpawnLevel.png is the Java2D spawn level.
-        mapPath = "levels/TestMap.png";
-        mobAtlas      = new TextureAtlas(Gdx.files.internal(mobAtlasPath));
-        tileAtlas     = new TextureAtlas(Gdx.files.internal(tileAtlasPath));
-        shapeRenderer = new ShapeRenderer();
-
-        batch           = new SpriteBatch();
-        keyboard        = new Keyboard();
-        mouse           = new Mouse();
-        // The world is always VIEWPORT_HEIGHT pixels tall; its width follows the
-        // game area's aspect ratio, so the side panel doesn't squash the view.
-        viewport = new ExtendViewport(VIEWPORT_HEIGHT, VIEWPORT_HEIGHT, camera);
-        viewport.apply();
-        camera = (OrthographicCamera) viewport.getCamera();
-        camera.position.set(VIEWPORT_WIDTH / 2f, VIEWPORT_HEIGHT / 2f, 0);
-        camera.update();
-
-
-        level = new ReignLevel(this);
-        // TileCoordinates holds pixels; placeOnTile() takes tile indexes.
-        TileCoordinates spawnTile = level.getRandomNonSolidTile();
-        player = new PlayerMob(this, 0, 0, "King Steve");
-        player.placeOnTile(spawnTile.getX() / Tile.SIZE, spawnTile.getY() / Tile.SIZE);
-        level.add(player);
-        level.generateMobs();
-
-        hud = new Hud(player, level);
-        // The panel comes first so its buttons take clicks before the spell input.
-        Gdx.input.setInputProcessor(new InputMultiplexer(hud.getStage(), keyboard, mouse));
+        batch      = new SpriteBatch();
+        mobAtlas   = new TextureAtlas(Gdx.files.internal("atlas/mobs.atlas"));
+        tileAtlas  = new TextureAtlas(Gdx.files.internal("atlas/Tiles.atlas"));
+        skin       = new Skin(Gdx.files.internal("ui/default/uiskin.json"));
+        audio      = new GameAudio();
+        highScores = new PreferencesHighScoreStore(Gdx.app.getPreferences(PreferencesHighScoreStore.PREFERENCES_NAME));
+        showMainMenu();
     }
 
-    @Override
-    public void resize(int width, int height) {
-        // The game draws left of the side panel.
-        viewport.update(Math.max(1, width - Hud.PANEL_WIDTH), height);
-        hud.resize(width, height);
+    /** Gets the sound effects and music that the screens play. */
+    public GameAudio getAudio() {
+        return audio;
     }
 
-
-    @Override
-    public void render() {
-        float delta = Gdx.graphics.getDeltaTime();
-
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-
-        // Update game logic
-        keyboard.update();
-        level.update(delta);
-        hud.update(delta);
-        viewport.apply();
-
-        // Follow the player, but stop at the map edges.
-        float halfWidth  = camera.viewportWidth / 2;
-        float halfHeight = camera.viewportHeight / 2;
-
-        int mapPixelWidth  = level.getWidth() * Tile.SIZE;
-        int mapPixelHeight = level.getHeight() * Tile.SIZE;
-
-        float cameraX = MathUtils.clamp((int) player.getX(), halfWidth, mapPixelWidth - halfWidth);
-        float cameraY = MathUtils.clamp((int) player.getY(), halfHeight, mapPixelHeight - halfHeight);
-
-        // Keep the camera on whole world pixels; the clamp bounds can be fractional.
-        camera.position.set(Math.round(cameraX), Math.round(cameraY), 0);
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
-        shapeRenderer.setProjectionMatrix(camera.combined);
-
-
-        batch.begin();
-        batch.enableBlending();
-        level.render(batch);
-        batch.end();
-
-        if (DRAW_HITBOX) drawPlayerHitbox();
-        hud.draw();
+    /** Gets the store that keeps the high score between runs and between launches. */
+    public HighScoreStore getHighScores() {
+        return highScores;
     }
 
-    /** Outlines the player's collision box in red. */
-    private void drawPlayerHitbox() {
-        float thickness = 1.5f;
-
-        float hitboxX      = (float) player.getX() + player.getPaddingLeft();
-        float hitboxY      = (float) player.getY() + player.getPaddingBottom();
-        float hitboxWidth  = player.getWidth() - player.getPaddingLeft() - player.getPaddingRight();
-        float hitboxHeight = player.getHeight() - player.getPaddingTop() - player.getPaddingBottom();
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.RED);
-
-        // Left border
-        shapeRenderer.rect(hitboxX, hitboxY, thickness, hitboxHeight);
-        // Right border
-        shapeRenderer.rect(hitboxX + hitboxWidth - thickness, hitboxY, thickness, hitboxHeight);
-        // Bottom border
-        shapeRenderer.rect(hitboxX, hitboxY, hitboxWidth, thickness);
-        // Top border
-        shapeRenderer.rect(hitboxX, hitboxY + hitboxHeight - thickness, hitboxWidth, thickness);
-        shapeRenderer.end();
+    /** Shows the main menu and ends any run in progress. */
+    public void showMainMenu() {
+        switchTo(new MainMenuScreen(this));
     }
 
-    @Override
-    public void dispose() {
-        batch.dispose();
-        mobAtlas.dispose();
-        tileAtlas.dispose();
-        shapeRenderer.dispose();
-        hud.dispose();
+    /**
+     * Starts a fresh run on the play screen. Every run gets its own
+     * {@link PlayScreen} and {@code Simulation}, with a new seed, so nothing
+     * from an earlier run carries over.
+     */
+    public void startRun() {
+        switchTo(new PlayScreen(this, System.nanoTime()));
     }
 
-    public ReignLevel getLevel() {
-        return level;
+    /**
+     * Shows the game-over screen for a run that ended.
+     *
+     * @param result How the run ended.
+     */
+    public void showGameOver(RunResult result) {
+        switchTo(new GameOverScreen(this, result));
     }
 
-    public Mouse getMouse() {
-        return mouse;
+    /**
+     * Shows a screen and disposes of the one it replaces. The switch waits for
+     * the end of the frame, so a button on the old screen can call it safely.
+     */
+    private void switchTo(Screen next) {
+        Gdx.app.postRunnable(() -> {
+            Screen previous = getScreen();
+            setScreen(next);
+            if (previous != null) previous.dispose();
+        });
     }
 
-    public Keyboard getKeyboard() {
-        return keyboard;
+    /** Checks whether the debug tools are on, as {@link #DEBUG_PROPERTY} sets. */
+    public boolean isDebug() {
+        return debug;
     }
 
-    public Viewport getViewport() {
-        return viewport;
+    /** Gets the sprite batch that the screens draw with. */
+    public SpriteBatch getBatch() {
+        return batch;
     }
 
+    /** Gets the atlas of mob and spell sprites. */
     public TextureAtlas getMobAtlas() {
         return mobAtlas;
     }
 
+    /** Gets the atlas of tile sprites. */
     public TextureAtlas getTileAtlas() {
         return tileAtlas;
     }
 
-    public String getMapPath() {
-        return mapPath;
+    /** Gets the UI skin that the menus use. */
+    public Skin getSkin() {
+        return skin;
+    }
+
+    @Override
+    public void dispose() {
+        Screen current = getScreen();
+        if (current != null) current.dispose();
+        batch.dispose();
+        mobAtlas.dispose();
+        tileAtlas.dispose();
+        skin.dispose();
+        audio.dispose();
     }
 }

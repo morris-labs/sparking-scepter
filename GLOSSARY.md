@@ -15,6 +15,16 @@ Reign's own rules and content, built on the Engine: its mobs, spells, waves,
 and arenas.
 _Avoid_: app
 
+**Simulation**:
+The object that runs one run's rules in one arena, one tick at a time, with
+no window, graphics, or sound. The game draws it, and tests drive it.
+_Avoid_: world, model
+
+**Tick**:
+One fixed 1/60-second step of the simulation. Rendering runs at the frame
+rate and runs as many ticks as real time requires.
+_Avoid_: frame, step, update
+
 ## World
 
 **Arena**:
@@ -34,7 +44,8 @@ The place in an arena where the player appears when a run begins.
 _Avoid_: spawn (for the player)
 
 **Tile**:
-One 16x16 cell of a level. A tile is either solid or walkable.
+One 16x16 cell of a level. Each tile type sets whether it blocks movement and
+whether it blocks spells: water blocks movement only, and walls block both.
 _Avoid_: block, cell
 
 ## Entities
@@ -74,6 +85,11 @@ _Avoid_: round, level
 The pause between waves, after the player clears one and before the next
 starts.
 _Avoid_: intermission, rest
+
+**Upgrade**:
+A lasting boost to the player, such as faster casting, that the player
+chooses from three offers during a break. It lasts until the run ends.
+_Avoid_: power-up, perk, buff
 
 **Score**:
 The points the player earns in one run.
