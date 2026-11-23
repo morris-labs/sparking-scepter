@@ -61,9 +61,6 @@ import java.util.List;
  * sets.
  */
 public final class Simulation {
-    /** The points that each kill adds to the score. */
-    public static final int POINTS_PER_KILL = 100;
-
     private final Engine                 engine = new Engine();
     private final EventLog               events = new EventLog();
     private final RunState               run    = new RunState();
@@ -191,9 +188,13 @@ public final class Simulation {
         return run.getBreakTicksLeft() * FixedTimestep.TICK_SECONDS;
     }
 
-    /** Gets the score: {@link #POINTS_PER_KILL} for each enemy the player has killed. */
+    /**
+     * Gets the score: the sum of the score values of the enemies the player
+     * has killed. Each enemy type has its own value, set in
+     * {@link MobFactory}.
+     */
     public long getScore() {
-        return PlayerComponent.MAPPER.get(player).kills * POINTS_PER_KILL;
+        return PlayerComponent.MAPPER.get(player).score;
     }
 
     /**

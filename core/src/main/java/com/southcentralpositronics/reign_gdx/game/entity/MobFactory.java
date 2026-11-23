@@ -50,6 +50,14 @@ public final class MobFactory {
     public static final double CONTACT_DAMAGE      = 0.1;
     /** The seconds between a Chaser's or A* Chaser's touches that hurt: a Chaser kills in 5 seconds. */
     public static final float  CONTACT_DELAY       = 0.5f;
+    /** The points a Dummy is worth. It never attacks. */
+    public static final long   DUMMY_SCORE         = 50;
+    /** The points a Chaser is worth. */
+    public static final long   CHASER_SCORE        = 100;
+    /** The points an A* Chaser is worth: it finds its way around walls. */
+    public static final long   ASTAR_CHASER_SCORE  = 150;
+    /** The points a Shooter is worth: it attacks from a distance. */
+    public static final long   SHOOTER_SCORE       = 200;
     /** The farthest the player can be for a Chaser to chase, in pixels. */
     public static final double CHASE_RANGE         = 800;
     /** The farthest the player can be for a Shooter to cast, in pixels. */
@@ -114,7 +122,7 @@ public final class MobFactory {
 
     /** Adds a Dummy: an enemy that wanders and never attacks. */
     public Entity createDummy(int tx, int ty) {
-        Entity dummy = createEnemyBase(EntityKind.DUMMY, tx, ty);
+        Entity dummy = createEnemyBase(EntityKind.DUMMY, tx, ty, DUMMY_SCORE);
         dummy.add(wander(0.5f, 1f));
         engine.addEntity(dummy);
         return dummy;
@@ -122,7 +130,7 @@ public final class MobFactory {
 
     /** Adds a Chaser: an enemy that walks straight at the player, ignoring walls, and hurts it by touch. */
     public Entity createChaser(int tx, int ty) {
-        Entity           chaser = createEnemyBase(EntityKind.CHASER, tx, ty);
+        Entity           chaser = createEnemyBase(EntityKind.CHASER, tx, ty, CHASER_SCORE);
         ChaseAiComponent chase  = engine.createComponent(ChaseAiComponent.class);
         chase.speed = CHASER_SPEED;
         chase.range = CHASE_RANGE;
@@ -134,7 +142,7 @@ public final class MobFactory {
 
     /** Adds an A* Chaser: an enemy that follows an A* path to the player, around walls, and hurts it by touch. */
     public Entity createAStarChaser(int tx, int ty) {
-        Entity           chaser = createEnemyBase(EntityKind.ASTAR_CHASER, tx, ty);
+        Entity           chaser = createEnemyBase(EntityKind.ASTAR_CHASER, tx, ty, ASTAR_CHASER_SCORE);
         AStarAiComponent ai     = engine.createComponent(AStarAiComponent.class);
         ai.speed          = CHASER_SPEED;
         ai.refreshSeconds = PATH_REFRESH_SECONDS;
@@ -146,7 +154,7 @@ public final class MobFactory {
 
     /** Adds a Shooter: an enemy that wanders and casts at the player in range. */
     public Entity createShooter(int tx, int ty) {
-        Entity             shooter = createEnemyBase(EntityKind.SHOOTER, tx, ty);
+        Entity             shooter = createEnemyBase(EntityKind.SHOOTER, tx, ty, SHOOTER_SCORE);
         ShooterAiComponent ai      = engine.createComponent(ShooterAiComponent.class);
         ai.range = SHOOTER_RANGE;
         shooter.add(wander(0.5f, 1.5f));
@@ -156,9 +164,11 @@ public final class MobFactory {
         return shooter;
     }
 
-    private Entity createEnemyBase(EntityKind kind, int tx, int ty) {
-        Entity enemy = createMob(kind, tx, ty);
-        enemy.add(engine.createComponent(EnemyComponent.class));
+    private Entity createEnemyBase(EntityKind kind, int tx, int ty, long score) {
+        Entity         enemy  = createMob(kind, tx, ty);
+        EnemyComponent marker = engine.createComponent(EnemyComponent.class);
+        marker.score = score;
+        enemy.add(marker);
         return enemy;
     }
 
