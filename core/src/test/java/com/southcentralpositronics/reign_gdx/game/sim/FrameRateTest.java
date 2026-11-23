@@ -15,6 +15,7 @@ class FrameRateTest {
         Simulation    simulation = new Simulation(TestArenas.open(16, 5, 1, 2), 7L);
         FixedTimestep timestep   = new FixedTimestep();
         double        startX     = simulation.getPlayer().x();
+        simulation.clearEnemies(); // Wave 1 would block the player's path; this test is about speed.
 
         simulation.setInput(PlayerInput.move(1, 0));
         for (int frame = 0; frame < framesPerSecond; frame++) {

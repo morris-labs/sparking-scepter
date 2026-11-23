@@ -21,6 +21,7 @@ class SimulationTest {
             "############",
             "#P.........#",
             "############"), SEED);
+        simulation.clearEnemies(); // Wave 1 would block the player's path; this test is about speed.
         EntityState start = simulation.getPlayer();
 
         simulation.setInput(PlayerInput.move(1, 0));

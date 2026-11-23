@@ -22,7 +22,7 @@ public final class SystemPriority {
     public static final int AI         = 200;
     /** Movement with tile collision. */
     public static final int MOVEMENT   = 300;
-    /** Pushing overlapping mobs apart. Nothing uses it yet. */
+    /** Pushing overlapping mobs apart. */
     public static final int SEPARATION = 400;
     /** Casting spells. */
     public static final int CASTING    = 500;
