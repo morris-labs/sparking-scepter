@@ -21,7 +21,7 @@ import java.util.Map;
  * {@link Simulation#getEntities()}. The simulation holds no textures, so this
  * class owns every texture lookup for the play screen.
  */
-public final class WorldRenderer implements Disposable {
+public final class ArenaRenderer implements Disposable {
     /** The seconds each walking frame shows. */
     private static final float  FRAME_SECONDS = 0.2f;
     /** The atlas region prefix of the player sprite. */
@@ -48,7 +48,7 @@ public final class WorldRenderer implements Disposable {
      * @param tileAtlas The atlas that holds the tiles and the fireball. Each
      *                  tile region is named after its {@link Tile.tileType}.
      */
-    public WorldRenderer(TextureAtlas mobAtlas, TextureAtlas tileAtlas) {
+    public ArenaRenderer(TextureAtlas mobAtlas, TextureAtlas tileAtlas) {
         for (Tile.tileType type : Tile.tileType.values()) tileRegions.put(type, tileAtlas.findRegion(type.name()));
         playerWalk = loadWalk(mobAtlas, PLAYER_SPRITE);
         enemyWalk  = loadWalk(mobAtlas, ENEMY_SPRITE);
