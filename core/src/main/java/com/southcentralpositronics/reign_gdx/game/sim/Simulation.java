@@ -211,6 +211,11 @@ public final class Simulation {
         return level.getHeight();
     }
 
+    /** Gets the arena's spawn points, the tiles where enemies enter, in the order the arena lists them. */
+    public List<Vector2i> getSpawnPoints() {
+        return level.getSpawnPoints().stream().map(point -> new Vector2i(point.x, point.y)).toList();
+    }
+
     /** Gets a tile, or null outside the arena. Don't change it. */
     public Tile getTileAt(int tx, int ty) {
         return level.getTileAt(tx, ty);
