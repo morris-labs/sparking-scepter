@@ -10,7 +10,8 @@ import com.southcentralpositronics.reign_gdx.engine.level.Level;
 /**
  * Moves particles by one tick: gravity pulls them down, they bounce off the
  * ground, and they bounce off solid tiles. The physics match the Java2D
- * {@code Particle} class step for step, so particles look the same.
+ * {@code Particle} class step for step, so particles look the same. Particles
+ * bounce off tiles that stop spells, so they fly over water as spells do.
  */
 public final class ParticleSystem extends IteratingSystem {
     /** The pull of gravity, in pixels per tick per tick. */
@@ -51,6 +52,6 @@ public final class ParticleSystem extends IteratingSystem {
     }
 
     private boolean blocked(double x, double y) {
-        return level.tileCollision(x, y, 1, 1);
+        return level.blocksSpells(x, y, 1, 1);
     }
 }
