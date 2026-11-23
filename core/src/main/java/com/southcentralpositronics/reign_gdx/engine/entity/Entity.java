@@ -5,7 +5,7 @@ import com.southcentralpositronics.reign_gdx.engine.level.Level;
 
 import java.util.Random;
 
-/** Anything that lives in a level: mobs, projectiles, particles, and spawners. */
+/** Anything on the old class tree that lives in a level: mobs and projectiles. Particles are Ashley entities. */
 public class Entity {
     protected int paddingLeft, paddingRight, paddingTop, paddingBottom;
     protected final Random  random  = new Random();

@@ -2,7 +2,6 @@ package com.southcentralpositronics.reign_gdx.game.entity.mob;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.southcentralpositronics.reign_gdx.engine.entity.Entity;
-import com.southcentralpositronics.reign_gdx.engine.entity.spawner.ParticleSpawner;
 import com.southcentralpositronics.reign_gdx.engine.level.Level;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
@@ -275,6 +274,6 @@ public abstract class Mob extends Entity {
     public void remove() {
         if (removed) return;
         super.remove();
-        level.add(new ParticleSpawner(x + mobSize / 2.0, y + HURT_HEIGHT / 2.0, 0, 10, 100, level));
+        level.getParticleEmitter().burst(x + mobSize / 2.0, y + HURT_HEIGHT / 2.0, 10, 100);
     }
 }
