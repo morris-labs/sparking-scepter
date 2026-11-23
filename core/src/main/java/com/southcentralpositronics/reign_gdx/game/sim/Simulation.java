@@ -26,8 +26,10 @@ import com.southcentralpositronics.reign_gdx.game.entity.component.PlayerCompone
 import com.southcentralpositronics.reign_gdx.game.entity.system.AStarAiSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.CastingSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.ChaseAiSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.ContactDamageSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.DeathSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.MobAnimationSystem;
+import com.southcentralpositronics.reign_gdx.game.entity.system.PlayerDeathSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.PlayerInputSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.ShooterAiSystem;
 import com.southcentralpositronics.reign_gdx.game.entity.system.SpellSystem;
@@ -96,6 +98,8 @@ public final class Simulation {
         engine.addSystem(new SeparationSystem(level, Families.MOBS));
         engine.addSystem(new CastingSystem(new SpellFactory(engine), events));
         engine.addSystem(new SpellSystem(level, events));
+        engine.addSystem(new ContactDamageSystem(events));
+        engine.addSystem(new PlayerDeathSystem(level, events, run));
         engine.addSystem(new DeathSystem(level, events));
         engine.addSystem(waves);
         engine.addSystem(new MobAnimationSystem());
@@ -192,7 +196,11 @@ public final class Simulation {
         return PlayerComponent.MAPPER.get(player).kills * POINTS_PER_KILL;
     }
 
-    /** Checks whether the run is over. The player can't die yet, so nothing ends a run. */
+    /**
+     * Checks whether the run is over: the player has died. The simulation
+     * still ticks after that, but the player can't act, and no wave or break
+     * starts.
+     */
     public boolean isRunOver() {
         return run.isOver();
     }

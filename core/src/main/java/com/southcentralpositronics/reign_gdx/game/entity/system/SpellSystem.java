@@ -83,8 +83,8 @@ public final class SpellSystem extends IteratingSystem {
             boolean isPlayer = PlayerComponent.MAPPER.has(target);
             if (spell.isPlayers() == isPlayer) continue;
             HealthComponent health = HealthComponent.MAPPER.get(target);
-            // An enemy with no health left dies this tick; later spells fly through it.
-            if (!isPlayer && health.isEmpty()) continue;
+            // A mob with no health left is dead or dies this tick; later spells fly through it.
+            if (health.isEmpty()) continue;
             PositionComponent targetPosition = PositionComponent.MAPPER.get(target);
             BodyComponent     body           = BodyComponent.MAPPER.get(target);
             if (!hits(position, targetPosition, body)) continue;

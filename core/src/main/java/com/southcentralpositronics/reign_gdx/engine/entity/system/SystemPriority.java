@@ -6,10 +6,10 @@ package com.southcentralpositronics.reign_gdx.engine.entity.system;
  * in the order they were added.
  *
  * <p>The range below {@link #PARTICLES} is for the rules of play, in this
- * order: input, AI, movement, mob separation, casting, spells, damage and
- * death, waves, and score. Effects such as animation and particles run after
- * the rules, and {@link #LIFETIME} runs last, so every system sees an expiring
- * entity on its final tick.
+ * order: input, AI, movement, mob separation, casting, spells, contact
+ * damage, death, waves, and score. Effects such as animation and particles
+ * run after the rules, and {@link #LIFETIME} runs last, so every system sees an
+ * expiring entity on its final tick.
  *
  * <p>An entity that a system adds or removes during a tick joins or leaves
  * the families as soon as that system finishes, so later systems in the same
@@ -28,6 +28,8 @@ public final class SystemPriority {
     public static final int CASTING    = 500;
     /** Spell flight, and the hits and damage that spells deal. */
     public static final int SPELLS     = 600;
+    /** Damage that mobs deal by touching each other. */
+    public static final int CONTACT    = 620;
     /** Death of mobs with no health left. */
     public static final int DEATH      = 650;
     /** Waves of enemies. */

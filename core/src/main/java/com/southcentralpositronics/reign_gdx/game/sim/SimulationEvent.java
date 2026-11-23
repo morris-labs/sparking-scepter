@@ -18,9 +18,9 @@ public record SimulationEvent(Type type, EntityKind kind, double x, double y) {
         HIT,
         /** An enemy died. */
         ENEMY_DEATH,
-        /** An enemy's spell hit the player. */
+        /** An enemy's spell or touch hurt the player. */
         PLAYER_DAMAGE,
-        /** The player died. Nothing raises it until the player can die. */
+        /** The player died, which ends the run. It fires once per run. */
         PLAYER_DEATH,
         /** A wave of enemies entered the arena. */
         WAVE_START

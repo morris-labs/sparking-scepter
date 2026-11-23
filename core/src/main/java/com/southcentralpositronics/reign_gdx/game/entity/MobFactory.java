@@ -10,6 +10,7 @@ import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.game.entity.component.AStarAiComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.CasterComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.ChaseAiComponent;
+import com.southcentralpositronics.reign_gdx.game.entity.component.ContactDamageComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.EnemyComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.MobComponent;
 import com.southcentralpositronics.reign_gdx.game.entity.component.PlayerComponent;
@@ -45,6 +46,10 @@ public final class MobFactory {
     public static final double PLAYER_SPELL_DAMAGE = 0.1;
     /** The health that an enemy's spell takes from the player, as in the Java2D version. */
     public static final double ENEMY_SPELL_DAMAGE  = 0.01;
+    /** The health that a Chaser or A* Chaser takes from the player with each touch: 10 touches kill. */
+    public static final double CONTACT_DAMAGE      = 0.1;
+    /** The seconds between a Chaser's or A* Chaser's touches that hurt: a Chaser kills in 5 seconds. */
+    public static final float  CONTACT_DELAY       = 0.5f;
     /** The farthest the player can be for a Chaser to chase, in pixels. */
     public static final double CHASE_RANGE         = 800;
     /** The farthest the player can be for a Shooter to cast, in pixels. */
@@ -115,24 +120,26 @@ public final class MobFactory {
         return dummy;
     }
 
-    /** Adds a Chaser: an enemy that walks straight at the player, ignoring walls. */
+    /** Adds a Chaser: an enemy that walks straight at the player, ignoring walls, and hurts it by touch. */
     public Entity createChaser(int tx, int ty) {
         Entity           chaser = createEnemyBase(EntityKind.CHASER, tx, ty);
         ChaseAiComponent chase  = engine.createComponent(ChaseAiComponent.class);
         chase.speed = CHASER_SPEED;
         chase.range = CHASE_RANGE;
         chaser.add(chase);
+        chaser.add(contactDamage());
         engine.addEntity(chaser);
         return chaser;
     }
 
-    /** Adds an A* Chaser: an enemy that follows an A* path to the player, around walls. */
+    /** Adds an A* Chaser: an enemy that follows an A* path to the player, around walls, and hurts it by touch. */
     public Entity createAStarChaser(int tx, int ty) {
         Entity           chaser = createEnemyBase(EntityKind.ASTAR_CHASER, tx, ty);
         AStarAiComponent ai     = engine.createComponent(AStarAiComponent.class);
         ai.speed          = CHASER_SPEED;
         ai.refreshSeconds = PATH_REFRESH_SECONDS;
         chaser.add(ai);
+        chaser.add(contactDamage());
         engine.addEntity(chaser);
         return chaser;
     }
@@ -187,6 +194,13 @@ public final class MobFactory {
         caster.shotDelay   = SHOT_DELAY;
         caster.spellDamage = spellDamage;
         return caster;
+    }
+
+    private ContactDamageComponent contactDamage() {
+        ContactDamageComponent contact = engine.createComponent(ContactDamageComponent.class);
+        contact.damage = CONTACT_DAMAGE;
+        contact.delay  = CONTACT_DELAY;
+        return contact;
     }
 
     /** Builds a wander AI that starts in a random direction, or standing still. */
