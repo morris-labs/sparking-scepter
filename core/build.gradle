@@ -17,4 +17,7 @@ dependencies {
 test {
   useJUnitPlatform()
   systemProperty 'java.awt.headless', 'true'
+  // Tests load TMX arenas from these folders by path, so a change there reruns them.
+  inputs.dir(rootProject.file('assets/levels')).withPropertyName('arenas').withPathSensitivity(PathSensitivity.RELATIVE)
+  inputs.dir(file('src/test/arenas')).withPropertyName('testArenas').withPathSensitivity(PathSensitivity.RELATIVE)
 }

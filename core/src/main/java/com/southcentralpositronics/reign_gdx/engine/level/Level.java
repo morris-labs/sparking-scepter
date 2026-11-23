@@ -1,11 +1,11 @@
 package com.southcentralpositronics.reign_gdx.engine.level;
 
 import com.badlogic.ashley.core.Engine;
-import com.badlogic.gdx.files.FileHandle;
 import com.southcentralpositronics.reign_gdx.engine.entity.ParticleEmitter;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
 
+import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
 
@@ -18,6 +18,7 @@ import java.util.function.Predicate;
 public class Level {
     protected final Random random;
     protected final ParticleEmitter particleEmitter;
+    protected final List<Vector2i> spawnPoints;
     protected int width, height;
     public Tile[][] tiles;
 
@@ -35,17 +36,10 @@ public class Level {
         this.tiles           = arena.tiles();
         this.width           = arena.getWidth();
         this.height          = arena.getHeight();
+        this.spawnPoints     = arena.getSpawnPoints();
         this.random          = new Random(seed);
         this.particleEmitter = new ParticleEmitter(engine, new Random(seed));
         engine.addSystem(particleEmitter);
-    }
-
-    /**
-     * Loads terrain from a level PNG file, without creating textures or a
-     * window. Its particles go to an engine that nothing updates.
-     */
-    public Level(FileHandle image) {
-        this(Arena.fromPng(image), 0L, new Engine());
     }
 
     /** Gets the emitter that bursts particles into the level's Ashley engine. */
@@ -122,6 +116,14 @@ public class Level {
 
     public int getHeight() {
         return height;
+    }
+
+    /**
+     * Gets the tiles where enemies enter, in the order the arena lists them.
+     * The list can't change; don't change its tiles.
+     */
+    public List<Vector2i> getSpawnPoints() {
+        return spawnPoints;
     }
 
     /** Gets the random number source that the level's rules draw from. */

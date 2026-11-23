@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.scenes.scene2d.ui.Widget;
 import com.badlogic.gdx.utils.Disposable;
-import com.southcentralpositronics.reign_gdx.engine.graphics.TileLoader;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.game.sim.EntityState;
 import com.southcentralpositronics.reign_gdx.game.sim.Simulation;
@@ -15,8 +14,8 @@ import java.util.List;
 
 /**
  * A map of the whole level, ported from the Java2D {@code UIMiniMap}. Each
- * tile is a square of its level-file color, the player is blue, and enemies
- * are red. Void is black.
+ * tile is a square of the color that the old level PNG files used for its
+ * type, the player is blue, and enemies are red. Void is black.
  */
 public class Minimap extends Widget implements Disposable {
     /** The size of one tile on the minimap, in screen pixels, as in the Java2D version. */
@@ -57,16 +56,16 @@ public class Minimap extends Widget implements Disposable {
         setSize(getPrefWidth(), getPrefHeight());
     }
 
-    /** Gets the RGBA8888 color for a tile, matching the level-file color. */
+    /** Gets the RGBA8888 color for a tile: the color its type had in the old level PNG files. */
     private static int tileColor(Tile tile) {
         if (tile == null) return VOID_COLOR;
         int argb = switch (tile.tile_Type) {
-            case grass -> TileLoader.COLOR_GRASS;
-            case hedge -> TileLoader.COLOR_HEDGE;
-            case water -> TileLoader.COLOR_WATER;
-            case wall -> TileLoader.COLOR_WALL;
-            case wall_alt -> TileLoader.COLOR_WALLALT;
-            case floor -> TileLoader.COLOR_FLOOR;
+            case grass -> 0xFF125B0A;
+            case hedge -> 0xFF004B00;
+            case water -> 0xFFC4DBFF;
+            case wall -> 0xFF665C09;
+            case wall_alt -> 0xFF6C3279;
+            case floor -> 0xFF434343;
             case void_tile -> 0xFF000000;
         };
         return (argb << 8) | (argb >>> 24);     // ARGB to RGBA

@@ -22,8 +22,8 @@ public class Game extends com.badlogic.gdx.Game {
     public static final String TITLE           = "Reign";
     /** The name the side panel shows for the player. */
     public static final String PLAYER_NAME     = "King Steve";
-    /** The 64x64 test map; levels/SpawnLevel.png is the Java2D spawn level. */
-    public static final String MAP_PATH        = "levels/TestMap.png";
+    /** The arena that every run plays: the Java2D spawn level, converted to a Tiled TMX file. */
+    public static final String ARENA_PATH      = "levels/SpawnLevel.tmx";
 
     private SpriteBatch  batch;
     private TextureAtlas mobAtlas, tileAtlas;

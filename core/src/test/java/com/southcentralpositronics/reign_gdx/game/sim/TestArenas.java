@@ -12,7 +12,7 @@ import com.southcentralpositronics.reign_gdx.engine.util.Vector2i;
  *   <li>{@code .}: grass
  *   <li>{@code #}: wall
  *   <li>{@code H}: hedge
- *   <li>{@code ~}: water
+ *   <li>{@code ~}: water, which blocks movement but not spells
  *   <li>{@code P}: grass with the player start on it
  * </ul>
  */
@@ -35,7 +35,7 @@ final class TestArenas {
                     case '.', 'P' -> new Tile(Tile.tileType.grass, false);
                     case '#' -> new Tile(Tile.tileType.wall, true);
                     case 'H' -> new Tile(Tile.tileType.hedge, true);
-                    case '~' -> new Tile(Tile.tileType.water, false);
+                    case '~' -> new Tile(Tile.tileType.water, true, false);
                     default -> throw new IllegalArgumentException("Unknown tile symbol: " + symbol);
                 };
                 if (symbol == 'P') playerStart = new Vector2i(tx, ty);

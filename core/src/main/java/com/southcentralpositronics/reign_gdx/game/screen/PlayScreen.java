@@ -85,7 +85,7 @@ public class PlayScreen extends ScreenAdapter {
         camera   = (OrthographicCamera) viewport.getCamera();
         camera.position.set(Game.VIEWPORT_WIDTH / 2f, Game.VIEWPORT_HEIGHT / 2f, 0);
 
-        simulation    = new Simulation(Arena.fromPng(Gdx.files.internal(Game.MAP_PATH)), seed);
+        simulation    = new Simulation(Arena.fromTmx(Gdx.files.internal(Game.ARENA_PATH)), seed);
         worldRenderer = new WorldRenderer(game.getMobAtlas(), game.getTileAtlas());
         hud           = new Hud(simulation, Game.PLAYER_NAME);
 

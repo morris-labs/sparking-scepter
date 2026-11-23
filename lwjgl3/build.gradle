@@ -174,15 +174,3 @@ startScripts.classpath = project.tasks.jar.outputs.files
 if(enableGraalNative == 'true') {
   apply from: file("nativeimage.gradle")
 }
-
-// Runs the map editor instead of the game. Use: ./gradlew lwjgl3:runEditor
-tasks.register('runEditor', JavaExec) {
-  group = 'application'
-  description = 'Runs the Reign map editor.'
-  dependsOn 'classes'
-  classpath = sourceSets.main.runtimeClasspath
-  mainClass = 'com.southcentralpositronics.reign_gdx.mapEditorLauncher.mapEditorLauncher'
-  workingDir = rootProject.file('assets').path
-  javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(23) }
-  if (os.contains('mac')) jvmArgs += "-XstartOnFirstThread"
-}
