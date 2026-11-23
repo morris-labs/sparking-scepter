@@ -44,6 +44,12 @@ fallback for an unknown color.
 
 ## Controls
 
+The game opens on the main menu. Click **Play** to start a run, or **Quit**
+to close the game.
+
+- **Pause**: press Escape. The run also pauses when the window loses focus.
+  While paused, nothing moves; click **Resume** or press Escape to continue,
+  or click **Main menu** to abandon the run.
 - **Move**: W, A, S, D, or the arrow keys.
 - **Fire**: hold the left mouse button; spells fly toward the pointer.
 - **Add Mobs** and **Clear Mobs**: spawn a wave or remove every enemy. A new
@@ -70,10 +76,11 @@ load another level, change `MAP_PATH` in the `Game` class.
 ## How the game runs
 
 The game's rules run in a simulation that advances in fixed ticks of 1/60 of
-a second. Each frame, the game turns the keyboard and mouse into player
-input, runs as many ticks as the frame's time calls for, and then draws the
-result. Speeds, fire rates, and timers are per second, so the game plays at
-the same speed at any frame rate.
+a second. Each frame, the play screen turns the keyboard and mouse into
+player input, runs as many ticks as the frame's time calls for, and then draws
+the result. While the run is paused, no ticks run, but the screen still
+draws. Speeds, fire rates, and timers are per second, so the game plays at the
+same speed at any frame rate.
 
 ## Project layout
 
@@ -81,8 +88,8 @@ the same speed at any frame rate.
   terrain, collision, pathfinding, entities, particles, input, the fixed
   timestep, rendering helpers, and the file chooser widget. Engine packages have no dependency on game packages.
 - `core/src/main/java/com/southcentralpositronics/reign_gdx/game/`: Reign's
-  application, simulation, renderer, mobs, spells, level rules, HUD, minimap,
-  and map editor.
+  application, main menu and play screens, simulation, renderer, mobs,
+  spells, level rules, HUD, minimap, and map editor.
 - `core/src/test/`: JUnit 5 tests and PNG fixtures.
 - `lwjgl3/`: the desktop launchers.
 - `assets/`: atlases, levels, sprites, and UI skins. Both run tasks use this

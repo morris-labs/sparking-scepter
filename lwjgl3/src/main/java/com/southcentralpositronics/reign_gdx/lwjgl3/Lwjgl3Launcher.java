@@ -35,6 +35,8 @@ public class Lwjgl3Launcher {
         configuration.setWindowedMode(1920, 1080);
         configuration.setResizable(true);
         configuration.setMaximized(true);
+        //// Calls pause() when the window loses focus, so the play screen pauses the run.
+        configuration.setPauseWhenLostFocus(true);
         //// You can change these files; they are in lwjgl3/src/main/resources/ .
         //// They can also be loaded from the root of assets/ .
         configuration.setWindowIcon("libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");
