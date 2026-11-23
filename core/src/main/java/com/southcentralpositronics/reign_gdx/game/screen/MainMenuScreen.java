@@ -7,18 +7,25 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.southcentralpositronics.reign_gdx.game.Game;
 
-/** The screen the game opens on. It offers Play, which starts a run, and Quit. */
+import java.util.List;
+
+/**
+ * The screen the game opens on. It shows the high score and offers Play, which
+ * starts a run, and Quit.
+ */
 public class MainMenuScreen extends ScreenAdapter {
     private final Stage stage;
 
     /**
      * Builds the main menu.
      *
-     * @param game The game whose skin the menu uses and that starts the run.
+     * @param game The game whose skin and high score the menu shows, and that
+     *             starts the run.
      */
     public MainMenuScreen(Game game) {
         stage = new Stage(new ScreenViewport(), game.getBatch());
         stage.addActor(Menu.build(game.getSkin(), Game.TITLE,
+            List.of(new Menu.Line("High score: " + game.getHighScores().getHighScore())),
             new Menu.Item("Play", game::startRun),
             new Menu.Item("Quit", Gdx.app::exit)));
     }
