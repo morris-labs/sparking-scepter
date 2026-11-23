@@ -2,7 +2,6 @@ package com.southcentralpositronics.reign_gdx.game.sim;
 
 import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
-import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.HealthComponent;
 import com.southcentralpositronics.reign_gdx.engine.entity.component.ParticleComponent;
@@ -109,7 +108,7 @@ public final class Simulation {
         engine.addSystem(new ParticleSystem(level));
         engine.addSystem(new LifetimeSystem());
 
-        particles = engine.getEntitiesFor(Family.all(ParticleComponent.class, PositionComponent.class).get());
+        particles = engine.getEntitiesFor(Families.PARTICLES);
         spells    = engine.getEntitiesFor(Families.SPELLS);
         enemies   = engine.getEntitiesFor(Families.ENEMIES);
 
