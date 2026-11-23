@@ -25,6 +25,7 @@ import com.southcentralpositronics.reign_gdx.engine.level.Arena;
 import com.southcentralpositronics.reign_gdx.engine.level.tile.Tile;
 import com.southcentralpositronics.reign_gdx.engine.time.FixedTimestep;
 import com.southcentralpositronics.reign_gdx.game.Game;
+import com.southcentralpositronics.reign_gdx.game.entity.MobFactory;
 import com.southcentralpositronics.reign_gdx.game.render.ArenaRenderer;
 import com.southcentralpositronics.reign_gdx.game.sim.EntityState;
 import com.southcentralpositronics.reign_gdx.game.sim.Simulation;
@@ -47,9 +48,6 @@ import com.southcentralpositronics.reign_gdx.game.ui.Hud;
  * seconds so the death shows, and then switches to the game-over screen.
  */
 public class PlayScreen extends ScreenAdapter {
-    /** The width and height of a mob's collision box, in pixels. */
-    private static final int     HITBOX_WIDTH  = 16;
-    private static final int     HITBOX_HEIGHT = 8;
     /** The tint drawn over the play screen while paused. */
     private static final Color   PAUSE_DIM     = new Color(0, 0, 0, 0.6f);
     /** The seconds between the player's death and the game-over screen. */
@@ -260,12 +258,12 @@ public class PlayScreen extends ScreenAdapter {
         shapeRenderer.setColor(Color.RED);
         for (EntityState mob : simulation.getEntities()) {
             if (!mob.kind().isMob()) continue;
-            float hitboxX = (float) mob.x() - HITBOX_WIDTH / 2f;
-            float hitboxY = (float) mob.y() - HITBOX_HEIGHT / 2f;
-            shapeRenderer.rect(hitboxX, hitboxY, thickness, HITBOX_HEIGHT);
-            shapeRenderer.rect(hitboxX + HITBOX_WIDTH - thickness, hitboxY, thickness, HITBOX_HEIGHT);
-            shapeRenderer.rect(hitboxX, hitboxY, HITBOX_WIDTH, thickness);
-            shapeRenderer.rect(hitboxX, hitboxY + HITBOX_HEIGHT - thickness, HITBOX_WIDTH, thickness);
+            float hitboxX = (float) mob.x() - MobFactory.BODY_WIDTH / 2f;
+            float hitboxY = (float) mob.y() - MobFactory.BODY_HEIGHT / 2f;
+            shapeRenderer.rect(hitboxX, hitboxY, thickness, MobFactory.BODY_HEIGHT);
+            shapeRenderer.rect(hitboxX + MobFactory.BODY_WIDTH - thickness, hitboxY, thickness, MobFactory.BODY_HEIGHT);
+            shapeRenderer.rect(hitboxX, hitboxY, MobFactory.BODY_WIDTH, thickness);
+            shapeRenderer.rect(hitboxX, hitboxY + MobFactory.BODY_HEIGHT - thickness, MobFactory.BODY_WIDTH, thickness);
         }
         shapeRenderer.end();
     }
