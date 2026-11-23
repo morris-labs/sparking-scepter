@@ -116,6 +116,23 @@ class WaveTest {
     }
 
     @Test
+    void clearMobsHoldsTheRunUntilAddMobs() {
+        Simulation simulation = new Simulation(corridor(), SEED);
+        tick(simulation, 180, new ArrayList<>());
+        assertEquals(1, simulation.getWave());
+
+        simulation.clearEnemies();
+        tick(simulation, 600, new ArrayList<>());
+        assertEquals(0, simulation.getEnemyCount());
+        assertFalse(simulation.isBreak(), "an emptied wave ended while Clear Mobs held it");
+        assertEquals(1, simulation.getWave());
+
+        simulation.addEnemies();
+        assertEquals(4, simulation.getEnemyCount());
+        assertEquals(1, simulation.getWave());
+    }
+
+    @Test
     void theSameSeedSendsTheSameWaveAndItMovesTheSameWay() {
         assertEquals(enemiesTwoSecondsIntoWaveOne(SEED), enemiesTwoSecondsIntoWaveOne(SEED));
     }
